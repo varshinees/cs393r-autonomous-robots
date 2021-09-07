@@ -50,6 +50,7 @@ VisualizationMsg global_viz_msg_;
 AckermannCurvatureDriveMsg drive_msg_;
 // Epsilon value for handling limited numerical precision.
 const float kEpsilon = 1e-5;
+// const float latency = 0.1;
 } //namespace
 
 namespace navigation {
@@ -89,19 +90,53 @@ void Navigation::UpdateOdometry(const Vector2f& loc,
                                 float ang_vel) {
   robot_omega_ = ang_vel;
   robot_vel_ = vel;
+  odom_loc_ = loc;
+  odom_angle_ = angle;
   if (!odom_initialized_) {
     odom_start_angle_ = angle;
     odom_start_loc_ = loc;
     odom_initialized_ = true;
     return;
   }
-  odom_loc_ = loc;
-  odom_angle_ = angle;
 }
 
 void Navigation::ObservePointCloud(const vector<Vector2f>& cloud,
                                    double time) {
   point_cloud_ = cloud;                                     
+}
+
+// calculates how far (distance) the car will travel during the latency
+// takes in the current velocity of the car as well as the current acceleration
+double Navigation::calculateLatencyDistance(double velocity, double acceleration) {
+  // uses kinematics to determine how far the robot will move 
+}
+
+// Decides whether to accelerate (4.0), decelerate (-4), or maintain velocity (0)
+double Navigation::makeControlDecision(double velocity, double acceleration) {
+  /*
+    Pseudocode (1D TOC):
+      
+      calculateLatencyDistance()
+      transform robot's current location along the current arc by that distance
+      calculate remaining distance to destination
+      calculate stopping distance based on current velocity & acceleration
+      **NOTE: "current velocity" refers to the velocity at the end of the latency period
+
+      if stopping distance >= remaining distance
+        decelerate
+      if stopping distance < remaining distance && current velocity < max velocity
+        accelerate
+      else 
+        maintain speed
+
+      Return decision
+  */
+}
+
+// takes in the acceleration determined by makeControlDecision() and the current 
+// velocity to figure out what the velocity should be by the next time stamp
+double Navigation::calculateNextVelocity(double velocity, double acceleration) {
+  // basic kinematics here
 }
 
 void Navigation::Run() {
@@ -116,12 +151,19 @@ void Navigation::Run() {
 
   // The control iteration goes here. 
   // Feel free to make helper functions to structure the control appropriately.
+
+  /*
+    Pseudocode:
+    retrieve previously stored current acceleration
+    double next_accel = makeControlDecision(drive_msg_.velocity, curr_accel)
+    drive_msg_.velocity = calculateNextVelocity(velocity after latency, next_accel)
+  */
   
   // The latest observed point cloud is accessible via "point_cloud_"
 
   // Eventually, you will have to set the control values to issue drive commands:
-  // drive_msg_.curvature = ...;
-  // drive_msg_.velocity = ...;
+  drive_msg_.curvature = 0;
+  drive_msg_.velocity = 1;
 
   // Add timestamps to all messages.
   local_viz_msg_.header.stamp = ros::Time::now();
