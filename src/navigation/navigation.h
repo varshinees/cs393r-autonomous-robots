@@ -59,6 +59,12 @@ class Navigation {
   // Updates based on an observed laser scan
   void ObservePointCloud(const std::vector<Eigen::Vector2f>& cloud,
                          double time);
+  float calculateLatencyDistance();
+  float calculateLatencyVelocity();
+  float calculateRemainingDistance();
+  void makeControlDecision();
+  float calculateNextVelocity();
+
 
   // Main function called continously from main
   void Run();
