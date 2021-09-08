@@ -32,12 +32,16 @@
 #include "shared/ros/ros_helpers.h"
 #include "navigation.h"
 #include "visualization/visualization.h"
+#include <cmath>
 
 using Eigen::Vector2f;
 using amrl_msgs::AckermannCurvatureDriveMsg;
 using amrl_msgs::VisualizationMsg;
 using std::string;
 using std::vector;
+using std::sqrt;
+using std::pow;
+using std::abs;
 
 using namespace math_util;
 using namespace ros_helpers;
@@ -50,7 +54,6 @@ VisualizationMsg global_viz_msg_;
 AckermannCurvatureDriveMsg drive_msg_;
 // Epsilon value for handling limited numerical precision.
 const float kEpsilon = 1e-5;
-// const float latency = 0.1;
 } //namespace
 
 namespace navigation {
@@ -107,15 +110,32 @@ void Navigation::ObservePointCloud(const vector<Vector2f>& cloud,
 
 // calculates how far (distance) the car will travel during the latency
 // takes in the current velocity of the car as well as the current acceleration
-double Navigation::calculateLatencyDistance(double velocity, double acceleration) {
+float Navigation::calculateLatencyDistance() {
   // uses kinematics to determine how far the robot will move 
+  float vnorm = sqrt(pow(robot_vel_.x(), 2) + pow(robot_vel_.y(), 2));
+  float final_v = calculateLatencyVelocity();
+  // assume the car is constantly accelerating
+  return 0.5 * (vnorm + final_v) * LATENCY;
+}
+
+// calculates what the velocity will be after the latency period, capping it at max
+float Navigation::calculateLatencyVelocity() {
+  // uses kinematics
+  float vnorm = sqrt(pow(robot_vel_.x(), 2) + pow(robot_vel_.y(), 2));
+  float final_velocity = std::min(vnorm + acceleration_ * LATENCY, MAX_VELOCITY);
+  return final_velocity > 0 ? final_velocity : 0;
+}
+
+// calculates the distance remaining to the target along a fixed arc
+float Navigation::calculateRemainingDistance() {
+  float travelled_dist = calculateLatencyDistance();
+  // remember to subtract out the latency distance before returning!
 }
 
 // Decides whether to accelerate (4.0), decelerate (-4), or maintain velocity (0)
-double Navigation::makeControlDecision(double velocity, double acceleration) {
+void Navigation::makeControlDecision() {
   /*
     Pseudocode (1D TOC):
-      
       calculateLatencyDistance()
       transform robot's current location along the current arc by that distance
       calculate remaining distance to destination
@@ -129,14 +149,37 @@ double Navigation::makeControlDecision(double velocity, double acceleration) {
       else 
         maintain speed
 
-      Return decision
+      acceleration_ = decision (4, -4, or 0)
   */
+
+  float curr_velocity = calculateLatencyVelocity();
+
+  // calculate remaining distance here
+  float remaining_dist = calculateRemainingDistance();
+
+  const float DECELERATION = -4.0;
+  const float ACCELERATION = 4.0;
+
+  float stopping_dist = -1 * pow(curr_velocity, 2) / (2 * DECELERATION);
+
+  if (stopping_dist >= remaining_dist) {
+    acceleration_ = DECELERATION;
+  } else if (stopping_dist < remaining_dist && curr_velocity < MAX_VELOCITY) {
+    acceleration_ = ACCELERATION;
+  } else {
+    acceleration_ = 0;
+  }
+  
 }
 
 // takes in the acceleration determined by makeControlDecision() and the current 
 // velocity to figure out what the velocity should be by the next time stamp
-double Navigation::calculateNextVelocity(double velocity, double acceleration) {
+float Navigation::calculateNextVelocity() {
   // basic kinematics here
+  float velocity = calculateLatencyVelocity();
+  float final_velocity = std::min(velocity + acceleration_ * 0.05, MAX_VELOCITY);
+  return final_velocity > 0 ? final_velocity : 0; 
+  
 }
 
 void Navigation::Run() {
@@ -151,13 +194,8 @@ void Navigation::Run() {
 
   // The control iteration goes here. 
   // Feel free to make helper functions to structure the control appropriately.
-
-  /*
-    Pseudocode:
-    retrieve previously stored current acceleration
-    double next_accel = makeControlDecision(drive_msg_.velocity, curr_accel)
-    drive_msg_.velocity = calculateNextVelocity(velocity after latency, next_accel)
-  */
+  makeControlDecision();
+  drive_msg_.velocity = calculateNextVelocity();
   
   // The latest observed point cloud is accessible via "point_cloud_"
 
@@ -176,3 +214,9 @@ void Navigation::Run() {
 }
 
 }  // namespace navigation
+
+/**
+1. to get curvature: drive_msg_ vs robot_angle?
+2.nav_goal_angle_: why we need it?
+
+**/

@@ -96,6 +96,13 @@ class Navigation {
   Eigen::Vector2f nav_goal_loc_;
   // Navigation goal angle.
   float nav_goal_angle_;
+
+  // stores the TOC phase
+  float acceleration_;
+
+  // latency constant
+  const float LATENCY = 0.1;
+  const float MAX_VELOCITY = 1;
 };
 
 }  // namespace navigation
