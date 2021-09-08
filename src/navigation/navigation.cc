@@ -122,14 +122,16 @@ float Navigation::calculateLatencyDistance() {
 float Navigation::calculateLatencyVelocity() {
   // uses kinematics
   float vnorm = sqrt(pow(robot_vel_.x(), 2) + pow(robot_vel_.y(), 2));
-  float final_velocity = std::min(vnorm + acceleration_ * LATENCY, MAX_VELOCITY);
+  float final_velocity = vnorm + acceleration_ < MAX_VELOCITY? vnorm + acceleration_ : acceleration_;
+  // float final_velocity = std::min(vnorm + acceleration_ * LATENCY, MAX_VELOCITY);
   return final_velocity > 0 ? final_velocity : 0;
 }
 
 // calculates the distance remaining to the target along a fixed arc
 float Navigation::calculateRemainingDistance() {
-  float travelled_dist = calculateLatencyDistance();
+  // float travelled_dist = calculateLatencyDistance();
   // remember to subtract out the latency distance before returning!
+  return 0.0;
 }
 
 // Decides whether to accelerate (4.0), decelerate (-4), or maintain velocity (0)
@@ -177,7 +179,8 @@ void Navigation::makeControlDecision() {
 float Navigation::calculateNextVelocity() {
   // basic kinematics here
   float velocity = calculateLatencyVelocity();
-  float final_velocity = std::min(velocity + acceleration_ * 0.05, MAX_VELOCITY);
+  // float final_velocity = std::min(velocity + acceleration_ * 0.05, MAX_VELOCITY);
+  float final_velocity = velocity + acceleration_ * 0.05 < MAX_VELOCITY? velocity + acceleration_ * 0.05 : MAX_VELOCITY;
   return final_velocity > 0 ? final_velocity : 0; 
   
 }
