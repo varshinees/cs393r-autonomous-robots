@@ -141,14 +141,17 @@ float Navigation::calculateFreePathLength() {
   const float CAR_WIDTH_SAFE = CAR_WIDTH + SAFE_MARGIN; // TODO: fix me
   
   // TODO: fix me. Treating goal as obstacle???
+  float x = nav_goal_loc_.x() - robot_loc_.x();
+  float y = nav_goal_loc_.y() - robot_loc_.y();
+  
   if(drive_msg_.curvature == 0) {
-    return nav_goal_loc_.x() - (CAR_LENGTH_SAFE + CAR_BASE) / 2;
+    return x - (CAR_LENGTH_SAFE + CAR_BASE) / 2;
   } 
 
   // distance from base_link frame origin to center of turning
   float r_c = 1/drive_msg_.curvature;
   // distance from center of turning to the goal
-  float r_goal = sqrt(pow(nav_goal_loc_.x(), 2) + pow((r_c - nav_goal_loc_.y()), 2));
+  float r_goal = sqrt(pow(x, 2) + pow((r_c - y), 2));
 
   // distance from center of turning to the car
   float r_inner_back = r_c - CAR_WIDTH_SAFE / 2;
@@ -160,9 +163,9 @@ float Navigation::calculateFreePathLength() {
 
   float theta = 0.0;
   if (hit_front) { 
-    theta = asin( nav_goal_loc_.x()/r_goal ) - asin( (CAR_LENGTH_SAFE+CAR_BASE)/2/r_goal );
+    theta = asin( x/r_goal ) - asin( (CAR_LENGTH_SAFE+CAR_BASE)/2/r_goal );
   } else if (hit_side) {
-    theta = asin( nav_goal_loc_.x()/r_goal ) - acos( (r_c - CAR_WIDTH_SAFE/2)/r_goal );
+    theta = asin( x/r_goal ) - acos( (r_c - CAR_WIDTH_SAFE/2)/r_goal );
   } else { // will not hit obstacle
     theta = 2 * M_PI;  // upper bound
   }
