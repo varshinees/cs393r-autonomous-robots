@@ -311,4 +311,5 @@ namespace navigation
 /**
 1. How to convert the LaserScan into the point cloud
 2. How precisely do we have to hit the navigation target?
+3. How to handle scoring function with values of different magnitudes? Normalization?
 **/
