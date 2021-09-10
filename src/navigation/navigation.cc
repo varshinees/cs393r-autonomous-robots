@@ -217,19 +217,19 @@ void Navigation::Run() {
   if (!odom_initialized_) return;
   // The control iteration goes here. 
   // Feel free to make helper functions to structure the control appropriately.
-  // if (nav_goal_loc_.x() != 0 || nav_goal_loc_.y() != 0) {
-  //   makeControlDecision();
-  //   // cout << "acceleration" << acceleration_ << endl;
-  //   drive_msg_.velocity = calculateNextVelocity();
-  //   // cout << "drive_msg_.velocity " << drive_msg_.velocity << endl;
-  //   drive_msg_.curvature = 0;
-  // }
+  if (nav_goal_loc_.x() != 0 || nav_goal_loc_.y() != 0) {
+    makeControlDecision();
+    // cout << "acceleration" << acceleration_ << endl;
+    drive_msg_.velocity = calculateNextVelocity();
+    // cout << "drive_msg_.velocity " << drive_msg_.velocity << endl;
+    drive_msg_.curvature = 0;
+  }
   
   // The latest observed point cloud is accessible via "point_cloud_"
 
   // Eventually, you will have to set the control values to issue drive commands:
-  drive_msg_.curvature = 0;
-  drive_msg_.velocity = 1;
+  // drive_msg_.curvature = 0;
+  // drive_msg_.velocity = 1;
 
   // Add timestamps to all messages.
   local_viz_msg_.header.stamp = ros::Time::now();
@@ -248,5 +248,6 @@ void Navigation::Run() {
 2. When we run, the entire point cloud moves around our base link in the simulator, not the other way around.
 3. freepath length to goal vs target - are they the same thing?
 4. in which frame is the nav_goal_loc_ and robot_loc recorded? Odom?
+5. (optional) why is the car not running??
 
 **/
