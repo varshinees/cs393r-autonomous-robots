@@ -62,6 +62,7 @@ class Navigation {
   float calculateLatencyDistance();
   float calculateLatencyVelocity();
   float calculateFreePathLength(const Eigen::Vector2f& p);
+  float calculateGoalDist();
   void makeControlDecision();
   float calculateNextVelocity();
 
@@ -111,6 +112,7 @@ class Navigation {
   const float MAX_VELOCITY = 1;
   const float DECELERATION = -4.0;
   const float ACCELERATION = 4.0;
+  const float EPSILON = 0.05;
 };
 
 }  // namespace navigation
