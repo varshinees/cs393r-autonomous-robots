@@ -65,6 +65,7 @@ class Navigation {
   float calculateGoalDist();
   void makeControlDecision();
   float calculateNextVelocity();
+  float findClosestObstacle();
 
 
   // Main function called continously from main
@@ -109,10 +110,12 @@ class Navigation {
 
   // latency constant
   const float LATENCY = 0.1;
-  const float MAX_VELOCITY = 1;
+  const float MAX_VELOCITY = 1.0;
   const float DECELERATION = -4.0;
   const float ACCELERATION = 4.0;
+
   const float EPSILON = 0.05;
+  const float HORIZON = 4.0;
 };
 
 }  // namespace navigation

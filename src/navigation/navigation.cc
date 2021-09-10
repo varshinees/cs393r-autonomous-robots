@@ -117,6 +117,7 @@ namespace navigation
   void Navigation::ObservePointCloud(const vector<Vector2f> &cloud,
                                      double time)
   {
+    cout << "inside ObservePointCloud" << endl;
     point_cloud_ = cloud;
   }
 
@@ -149,20 +150,19 @@ namespace navigation
     const float CAR_BASE = 0.2;  // TODO: fix me
     const float CAR_WIDTH = 0.2; // TODO: fix me
     const float CAR_WIDTH_SAFE = CAR_WIDTH + SAFE_MARGIN * 2;
-    // const float HORIZON = 4;
-    // const float LASER_X = 0.1;
+    const float LASER_X = 0.2;
 
     // TODO: fix me. assuming p is in the map fram
-    float x = p.x() - robot_loc_.x();
-    float y = p.y() - robot_loc_.y();
+    float x = p.x() - LASER_X;
+    float y = p.y();
 
     if (drive_msg_.curvature == 0)
     {
       // check if the goal is in front of the car
       if (y <= CAR_WIDTH_SAFE && y >= -CAR_WIDTH_SAFE && x >= (CAR_LENGTH_SAFE + CAR_BASE) / 2)
-        return x - (CAR_LENGTH_SAFE + CAR_BASE) / 2;
+        return x - (CAR_LENGTH_SAFE + CAR_BASE) / 2 >= 0 ? x - (CAR_LENGTH_SAFE + CAR_BASE) / 2 : 0;
       else
-        return 0; // TODO: fix me.
+        return HORIZON;
     }
 
     // distance from base_link frame origin to center of turning
@@ -214,15 +214,30 @@ namespace navigation
     return theta * r_c;
   }
 
+  float Navigation::findClosestObstacle() {
+    float min_path_len = HORIZON;
+    for (Eigen::Vector2f v : point_cloud_) {
+      // calculate free path length for each point
+      float path_len = calculateFreePathLength(v);
+      assert(path_len >= 0);
+      // cout << "path_len: " << path_len << endl;
+      if (path_len < min_path_len) {
+        min_path_len = path_len;
+      }
+    }
+    // return the minimum value
+    return min_path_len;
+  }
+
   // Decides whether to accelerate (4.0), decelerate (-4), or maintain velocity (0)
   void Navigation::makeControlDecision()
   {
     float curr_velocity = calculateLatencyVelocity();
-    float remaining_dist = calculateGoalDist() - calculateLatencyDistance();
+    float remaining_dist = findClosestObstacle() - calculateLatencyDistance();
     float stopping_dist = -1 * pow(curr_velocity, 2) / (2 * DECELERATION);
 
     cout << "stopping_dist: " << stopping_dist << ", remaining_dist: " << remaining_dist
-         << ", GoalDist: " << calculateGoalDist() << ", latency dist: " << calculateLatencyDistance() << ", velocity: " << curr_velocity << endl;
+         << ", Obstacle: " << findClosestObstacle() << ", latency dist: " << calculateLatencyDistance() << ", velocity: " << curr_velocity << endl;
     if (stopping_dist >= remaining_dist)
     {
       acceleration_ = DECELERATION;
@@ -294,10 +309,6 @@ namespace navigation
 } // namespace navigation
 
 /**
-1. How to measure latency?
-2. When we run, the entire point cloud moves around our base link in the simulator, not the other way around.
-3. freepath length to goal vs target - are they the same thing?
-4. in which frame is the nav_goal_loc_ and robot_loc recorded? Odom?
-5. (optional) why is the car not running??
-
+1. How to convert the LaserScan into the point cloud
+2. How precisely do we have to hit the navigation target?
 **/
