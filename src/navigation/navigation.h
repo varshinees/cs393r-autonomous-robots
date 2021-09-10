@@ -61,7 +61,7 @@ class Navigation {
                          double time);
   float calculateLatencyDistance();
   float calculateLatencyVelocity();
-  float calculateFreePathLength();
+  float calculateFreePathLength(const Eigen::Vector2f& p);
   void makeControlDecision();
   float calculateNextVelocity();
 

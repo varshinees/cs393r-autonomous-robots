@@ -68,7 +68,7 @@ Navigation::Navigation(const string& map_file, ros::NodeHandle* n) :
     robot_vel_(0, 0),
     robot_omega_(0),
     nav_complete_(true),
-    nav_goal_loc_(0, 0),
+    nav_goal_loc_(5, 0), // TODO: change to command line argument
     nav_goal_angle_(0) {
   drive_pub_ = n->advertise<AckermannCurvatureDriveMsg>(
       "ackermann_curvature_drive", 1);
@@ -132,24 +132,30 @@ float Navigation::calculateLatencyVelocity() {
 }
 
 // calculates the distance remaining to the target along a fixed arc
-float Navigation::calculateFreePathLength() {
+float Navigation::calculateFreePathLength(const Eigen::Vector2f& p) {
   const float SAFE_MARGIN = 0.1; // TODO: fix me
   const float CAR_LENGTH = 0.3; // TODO: fix me
-  const float CAR_LENGTH_SAFE = CAR_LENGTH + SAFE_MARGIN; // TODO: fix me
+  const float CAR_LENGTH_SAFE = CAR_LENGTH + SAFE_MARGIN * 2;
   const float CAR_BASE = 0.2;  // TODO: fix me
   const float CAR_WIDTH = 0.2; // TODO: fix me
-  const float CAR_WIDTH_SAFE = CAR_WIDTH + SAFE_MARGIN; // TODO: fix me
+  const float CAR_WIDTH_SAFE = CAR_WIDTH + SAFE_MARGIN * 2;
+  const float HORIZON = 4;
+  // const float LASER_X = 0.1;
   
-  // TODO: fix me. Treating goal as obstacle???
-  float x = nav_goal_loc_.x() - robot_loc_.x();
-  float y = nav_goal_loc_.y() - robot_loc_.y();
+  // TODO: fix me. assuming p is in the odom fram
+  float x = p.x() - robot_loc_.x();
+  float y = p.y() - robot_loc_.y();
   
   if(drive_msg_.curvature == 0) {
-    return x - (CAR_LENGTH_SAFE + CAR_BASE) / 2;
+    if(x <= CAR_WIDTH_SAFE && x >= -CAR_WIDTH_SAFE)
+      return x - (CAR_LENGTH_SAFE + CAR_BASE) / 2;
+    else
+      return HORIZON;
   } 
 
   // distance from base_link frame origin to center of turning
   float r_c = 1/drive_msg_.curvature;
+  r_c = r_c > 0 ? r_c : -r_c;
   // distance from center of turning to the goal
   float r_goal = sqrt(pow(x, 2) + pow((r_c - y), 2));
 
@@ -176,7 +182,7 @@ float Navigation::calculateFreePathLength() {
 // Decides whether to accelerate (4.0), decelerate (-4), or maintain velocity (0)
 void Navigation::makeControlDecision() {
   float curr_velocity = calculateLatencyVelocity();
-  float remaining_dist = calculateFreePathLength() - calculateLatencyDistance();
+  float remaining_dist = calculateFreePathLength(nav_goal_loc_) - calculateLatencyDistance();
   float stopping_dist = -1 * pow(curr_velocity, 2) / (2 * DECELERATION);
   
   cout << "stopping_dist: " << stopping_dist << ", remaining_dist: " << remaining_dist << ", velocity: " << curr_velocity << endl;
@@ -204,16 +210,20 @@ void Navigation::Run() {
   // Clear previous visualizations.
   visualization::ClearVisualizationMsg(local_viz_msg_);
   visualization::ClearVisualizationMsg(global_viz_msg_);
+  visualization::DrawCross(nav_goal_loc_, 0.5, 0x0dde30, global_viz_msg_);
 
   // If odometry has not been initialized, we can't do anything.
   if (!odom_initialized_) return;
   // The control iteration goes here. 
   // Feel free to make helper functions to structure the control appropriately.
-  if (nav_goal_loc_.x() != 0 || nav_goal_loc_.y() != 0) {
+  if (nav_goal_loc_.x() - robot_loc_.x() != 0 || nav_goal_loc_.y() - robot_loc_.y() != 0) {
     makeControlDecision();
     // cout << "acceleration" << acceleration_ << endl;
     drive_msg_.velocity = calculateNextVelocity();
     // cout << "drive_msg_.velocity " << drive_msg_.velocity << endl;
+    drive_msg_.curvature = 0;
+  } else {
+    drive_msg_.velocity = 0;
     drive_msg_.curvature = 0;
   }
   
