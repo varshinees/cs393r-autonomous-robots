@@ -125,10 +125,8 @@ float Navigation::calculateLatencyDistance() {
 
 // calculates what the velocity will be after the latency period, capping it at max
 float Navigation::calculateLatencyVelocity() {
-  // uses kinematics
   float vnorm = sqrt(pow(robot_vel_.x(), 2) + pow(robot_vel_.y(), 2));
   float final_velocity = vnorm + acceleration_ * LATENCY < MAX_VELOCITY ? vnorm + acceleration_ * LATENCY : MAX_VELOCITY;
-  // float final_velocity = std::min(vnorm + acceleration_ * LATENCY, MAX_VELOCITY);
   // cout << "acceleration_: " << acceleration_ << endl;
   return final_velocity > 0 ? final_velocity : 0;
 }
@@ -143,14 +141,17 @@ float Navigation::calculateFreePathLength() {
   const float CAR_WIDTH_SAFE = CAR_WIDTH + SAFE_MARGIN; // TODO: fix me
   
   // TODO: fix me. Treating goal as obstacle???
+  float x = nav_goal_loc_.x() - robot_loc_.x();
+  float y = nav_goal_loc_.y() - robot_loc_.y();
+  
   if(drive_msg_.curvature == 0) {
-    return nav_goal_loc_.x() - (CAR_LENGTH_SAFE + CAR_BASE) / 2;
+    return x - (CAR_LENGTH_SAFE + CAR_BASE) / 2;
   } 
 
   // distance from base_link frame origin to center of turning
   float r_c = 1/drive_msg_.curvature;
   // distance from center of turning to the goal
-  float r_goal = sqrt(pow(nav_goal_loc_.x(), 2) + pow((r_c - nav_goal_loc_.y()), 2));
+  float r_goal = sqrt(pow(x, 2) + pow((r_c - y), 2));
 
   // distance from center of turning to the car
   float r_inner_back = r_c - CAR_WIDTH_SAFE / 2;
@@ -162,48 +163,39 @@ float Navigation::calculateFreePathLength() {
 
   float theta = 0.0;
   if (hit_front) { 
-    theta = asin( nav_goal_loc_.x()/r_goal ) - asin( (CAR_LENGTH_SAFE+CAR_BASE)/2/r_goal );
+    theta = asin( x/r_goal ) - asin( (CAR_LENGTH_SAFE+CAR_BASE)/2/r_goal );
   } else if (hit_side) {
-    theta = asin( nav_goal_loc_.x()/r_goal ) - acos( (r_c - CAR_WIDTH_SAFE/2)/r_goal );
-  } else {
+    theta = asin( x/r_goal ) - acos( (r_c - CAR_WIDTH_SAFE/2)/r_goal );
+  } else { // will not hit obstacle
     theta = 2 * M_PI;  // upper bound
   }
   
-  // remember to subtract out the latency distance before returning!
   return theta * r_c;
-  // return sqrt( pow(nav_goal_loc_.x()-robot_loc_.x(),2) + pow(nav_goal_loc_.y()-robot_loc_.y(),2) ) - travelled_dist;
 }
 
 // Decides whether to accelerate (4.0), decelerate (-4), or maintain velocity (0)
 void Navigation::makeControlDecision() {
-
   float curr_velocity = calculateLatencyVelocity();
-
-  // calculate remaining distance here
-  float free_path_length = calculateFreePathLength() - calculateLatencyDistance();
-
+  float remaining_dist = calculateFreePathLength() - calculateLatencyDistance();
   float stopping_dist = -1 * pow(curr_velocity, 2) / (2 * DECELERATION);
-cout << "stopping_dist: " << stopping_dist << ", free_path_length: " << free_path_length << ", velocity: " << curr_velocity << endl;
-  if (stopping_dist >= free_path_length) {
+  
+  cout << "stopping_dist: " << stopping_dist << ", remaining_dist: " << remaining_dist << ", velocity: " << curr_velocity << endl;
+  if (stopping_dist >= remaining_dist) {
     acceleration_ = DECELERATION;
-  } else if (stopping_dist < free_path_length && curr_velocity < MAX_VELOCITY) {
+  } else if (stopping_dist < remaining_dist && curr_velocity < MAX_VELOCITY) {
     acceleration_ = ACCELERATION;
   } else {
     acceleration_ = 0;
   }
-  
 }
 
 // takes in the acceleration determined by makeControlDecision() and the current 
 // velocity to figure out what the velocity should be by the next time stamp
 float Navigation::calculateNextVelocity() {
-  // basic kinematics here
   float velocity = calculateLatencyVelocity();
-  // float final_velocity = std::min(velocity + acceleration_ * 0.05, MAX_VELOCITY);
   float final_velocity = velocity + acceleration_ * 0.05 < MAX_VELOCITY ? velocity + acceleration_ * 0.05 : MAX_VELOCITY;
   // cout << "final_velocity " << final_velocity << endl;
   return final_velocity > 0 ? final_velocity : 0; 
-  
 }
 
 void Navigation::Run() {
