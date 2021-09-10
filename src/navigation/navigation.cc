@@ -42,6 +42,8 @@ using std::vector;
 using std::sqrt;
 using std::pow;
 using std::abs;
+using std::cout;
+using std::endl;
 
 using namespace math_util;
 using namespace ros_helpers;
@@ -76,9 +78,12 @@ Navigation::Navigation(const string& map_file, ros::NodeHandle* n) :
   global_viz_msg_ = visualization::NewVisualizationMessage(
       "map", "navigation_global");
   InitRosHeader("base_link", &drive_msg_.header);
+  acceleration_ = 0.0;
 }
 
 void Navigation::SetNavGoal(const Vector2f& loc, float angle) {
+  nav_goal_loc_ = loc;
+  nav_goal_angle_ = angle;
 }
 
 void Navigation::UpdateLocation(const Eigen::Vector2f& loc, float angle) {
@@ -122,51 +127,66 @@ float Navigation::calculateLatencyDistance() {
 float Navigation::calculateLatencyVelocity() {
   // uses kinematics
   float vnorm = sqrt(pow(robot_vel_.x(), 2) + pow(robot_vel_.y(), 2));
-  float final_velocity = vnorm + acceleration_ < MAX_VELOCITY? vnorm + acceleration_ : acceleration_;
+  float final_velocity = vnorm + acceleration_ * LATENCY < MAX_VELOCITY ? vnorm + acceleration_ * LATENCY : MAX_VELOCITY;
   // float final_velocity = std::min(vnorm + acceleration_ * LATENCY, MAX_VELOCITY);
+  // cout << "acceleration_: " << acceleration_ << endl;
   return final_velocity > 0 ? final_velocity : 0;
 }
 
 // calculates the distance remaining to the target along a fixed arc
-float Navigation::calculateRemainingDistance() {
-  // float travelled_dist = calculateLatencyDistance();
+float Navigation::calculateFreePathLength() {
+  const float SAFE_MARGIN = 0.1; // TODO: fix me
+  const float CAR_LENGTH = 0.3; // TODO: fix me
+  const float CAR_LENGTH_SAFE = CAR_LENGTH + SAFE_MARGIN; // TODO: fix me
+  const float CAR_BASE = 0.2;  // TODO: fix me
+  const float CAR_WIDTH = 0.2; // TODO: fix me
+  const float CAR_WIDTH_SAFE = CAR_WIDTH + SAFE_MARGIN; // TODO: fix me
+  
+  // TODO: fix me. Treating goal as obstacle???
+  if(drive_msg_.curvature == 0) {
+    return nav_goal_loc_.x() - (CAR_LENGTH_SAFE + CAR_BASE) / 2;
+  } 
+
+  // distance from base_link frame origin to center of turning
+  float r_c = 1/drive_msg_.curvature;
+  // distance from center of turning to the goal
+  float r_goal = sqrt(pow(nav_goal_loc_.x(), 2) + pow((r_c - nav_goal_loc_.y()), 2));
+
+  // distance from center of turning to the car
+  float r_inner_back = r_c - CAR_WIDTH_SAFE / 2;
+  float r_inner_front = 0.5 * sqrt(pow(2 * r_c - CAR_WIDTH_SAFE, 2) + pow(CAR_BASE+CAR_LENGTH_SAFE, 2));
+  float r_outer_front = 0.5 * sqrt(pow(2 * r_c + CAR_WIDTH_SAFE, 2) + pow(CAR_BASE+CAR_LENGTH_SAFE, 2));
+  
+  bool hit_front = r_goal >= r_inner_back && r_goal <= r_inner_front;
+  bool hit_side  = r_goal >= r_inner_front && r_goal <= r_outer_front;
+
+  float theta = 0.0;
+  if (hit_front) { 
+    theta = asin( nav_goal_loc_.x()/r_goal ) - asin( (CAR_LENGTH_SAFE+CAR_BASE)/2/r_goal );
+  } else if (hit_side) {
+    theta = asin( nav_goal_loc_.x()/r_goal ) - acos( (r_c - CAR_WIDTH_SAFE/2)/r_goal );
+  } else {
+    theta = 2 * M_PI;  // upper bound
+  }
+  
   // remember to subtract out the latency distance before returning!
-  return 0.0;
+  return theta * r_c;
+  // return sqrt( pow(nav_goal_loc_.x()-robot_loc_.x(),2) + pow(nav_goal_loc_.y()-robot_loc_.y(),2) ) - travelled_dist;
 }
 
 // Decides whether to accelerate (4.0), decelerate (-4), or maintain velocity (0)
 void Navigation::makeControlDecision() {
-  /*
-    Pseudocode (1D TOC):
-      calculateLatencyDistance()
-      transform robot's current location along the current arc by that distance
-      calculate remaining distance to destination
-      calculate stopping distance based on current velocity & acceleration
-      **NOTE: "current velocity" refers to the velocity at the end of the latency period
-
-      if stopping distance >= remaining distance
-        decelerate
-      if stopping distance < remaining distance && current velocity < max velocity
-        accelerate
-      else 
-        maintain speed
-
-      acceleration_ = decision (4, -4, or 0)
-  */
 
   float curr_velocity = calculateLatencyVelocity();
 
   // calculate remaining distance here
-  float remaining_dist = calculateRemainingDistance();
-
-  const float DECELERATION = -4.0;
-  const float ACCELERATION = 4.0;
+  float free_path_length = calculateFreePathLength() - calculateLatencyDistance();
 
   float stopping_dist = -1 * pow(curr_velocity, 2) / (2 * DECELERATION);
-
-  if (stopping_dist >= remaining_dist) {
+cout << "stopping_dist: " << stopping_dist << ", free_path_length: " << free_path_length << ", velocity: " << curr_velocity << endl;
+  if (stopping_dist >= free_path_length) {
     acceleration_ = DECELERATION;
-  } else if (stopping_dist < remaining_dist && curr_velocity < MAX_VELOCITY) {
+  } else if (stopping_dist < free_path_length && curr_velocity < MAX_VELOCITY) {
     acceleration_ = ACCELERATION;
   } else {
     acceleration_ = 0;
@@ -180,7 +200,8 @@ float Navigation::calculateNextVelocity() {
   // basic kinematics here
   float velocity = calculateLatencyVelocity();
   // float final_velocity = std::min(velocity + acceleration_ * 0.05, MAX_VELOCITY);
-  float final_velocity = velocity + acceleration_ * 0.05 < MAX_VELOCITY? velocity + acceleration_ * 0.05 : MAX_VELOCITY;
+  float final_velocity = velocity + acceleration_ * 0.05 < MAX_VELOCITY ? velocity + acceleration_ * 0.05 : MAX_VELOCITY;
+  // cout << "final_velocity " << final_velocity << endl;
   return final_velocity > 0 ? final_velocity : 0; 
   
 }
@@ -194,11 +215,15 @@ void Navigation::Run() {
 
   // If odometry has not been initialized, we can't do anything.
   if (!odom_initialized_) return;
-
   // The control iteration goes here. 
   // Feel free to make helper functions to structure the control appropriately.
-  makeControlDecision();
-  drive_msg_.velocity = calculateNextVelocity();
+  // if (nav_goal_loc_.x() != 0 || nav_goal_loc_.y() != 0) {
+  //   makeControlDecision();
+  //   // cout << "acceleration" << acceleration_ << endl;
+  //   drive_msg_.velocity = calculateNextVelocity();
+  //   // cout << "drive_msg_.velocity " << drive_msg_.velocity << endl;
+  //   drive_msg_.curvature = 0;
+  // }
   
   // The latest observed point cloud is accessible via "point_cloud_"
 
@@ -219,7 +244,9 @@ void Navigation::Run() {
 }  // namespace navigation
 
 /**
-1. to get curvature: drive_msg_ vs robot_angle?
-2.nav_goal_angle_: why we need it?
+1. How to measure latency?
+2. When we run, the entire point cloud moves around our base link in the simulator, not the other way around.
+3. freepath length to goal vs target - are they the same thing?
+4. in which frame is the nav_goal_loc_ and robot_loc recorded? Odom?
 
 **/

@@ -61,7 +61,7 @@ class Navigation {
                          double time);
   float calculateLatencyDistance();
   float calculateLatencyVelocity();
-  float calculateRemainingDistance();
+  float calculateFreePathLength();
   void makeControlDecision();
   float calculateNextVelocity();
 
@@ -109,6 +109,8 @@ class Navigation {
   // latency constant
   const float LATENCY = 0.1;
   const float MAX_VELOCITY = 1;
+  const float DECELERATION = -4.0;
+  const float ACCELERATION = 4.0;
 };
 
 }  // namespace navigation
