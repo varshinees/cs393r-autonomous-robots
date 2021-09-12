@@ -56,7 +56,7 @@ namespace
   VisualizationMsg global_viz_msg_;
   AckermannCurvatureDriveMsg drive_msg_;
   // Epsilon value for handling limited numerical precision.
-  const float kEpsilon = 1e-5;
+  const float kEpsilon = 1e-4;
 } //namespace
 
 namespace navigation
@@ -142,21 +142,13 @@ namespace navigation
   }
 
   // calculates the distance remaining to the target along a fixed arc
-  float Navigation::calculateFreePathLength(const Eigen::Vector2f &p)
+  float Navigation::calculateFreePathLength(const Eigen::Vector2f &p, float curvature)
   {
-    const float SAFE_MARGIN = 0.1; // TODO: fix me
-    const float CAR_LENGTH = 0.3;  // TODO: fix me
-    const float CAR_LENGTH_SAFE = CAR_LENGTH + SAFE_MARGIN * 2;
-    const float CAR_BASE = 0.2;  // TODO: fix me
-    const float CAR_WIDTH = 0.2; // TODO: fix me
-    const float CAR_WIDTH_SAFE = CAR_WIDTH + SAFE_MARGIN * 2;
-    const float LASER_X = 0.2;
-
     // TODO: fix me. assuming p is in the map fram
     float x = p.x() - LASER_X;
     float y = p.y();
 
-    if (drive_msg_.curvature == 0)
+    if (curvature == 0)
     {
       // check if the goal is in front of the car
       if (y <= CAR_WIDTH_SAFE && y >= -CAR_WIDTH_SAFE && x >= (CAR_LENGTH_SAFE + CAR_BASE) / 2)
@@ -166,7 +158,7 @@ namespace navigation
     }
 
     // distance from base_link frame origin to center of turning
-    float r_c = 1 / drive_msg_.curvature;
+    float r_c = 1 / curvature;
     r_c = r_c > 0 ? r_c : -r_c;
     // distance from center of turning to the goal
     float r_goal = sqrt(pow(x, 2) + pow((r_c - y), 2));
@@ -196,29 +188,29 @@ namespace navigation
     return theta * r_c;
   }
 
-  float Navigation::calculateGoalDist() {
-    float x = nav_goal_loc_.x() - robot_loc_.x();
-    float y = nav_goal_loc_.y() - robot_loc_.y();
+  // float Navigation::calculateGoalDist() {
+  //   float x = nav_goal_loc_.x() - robot_loc_.x();
+  //   float y = nav_goal_loc_.y() - robot_loc_.y();
     
-    // TODO: fix me. assume goal is on the arc the car is traveling
-    if (drive_msg_.curvature == 0) {
-      if (y <= EPSILON && y >= -EPSILON && x >= EPSILON ) {
-        return x;
-      } else {
-        return 0; // TODO: fix me
-      }
-    }
-    float r_c = 1 / drive_msg_.curvature;
-    r_c = r_c > 0 ? r_c : -r_c;
-    float theta = asin(x/r_c);
-    return theta * r_c;
-  }
+  //   // TODO: fix me. assume goal is on the arc the car is traveling
+  //   if (drive_msg_.curvature == 0) {
+  //     if (y <= EPSILON && y >= -EPSILON && x >= EPSILON ) {
+  //       return x;
+  //     } else {
+  //       return 0; // TODO: fix me
+  //     }
+  //   }
+  //   float r_c = 1 / drive_msg_.curvature;
+  //   r_c = r_c > 0 ? r_c : -r_c;
+  //   float theta = asin(x/r_c);
+  //   return theta * r_c;
+  // }
 
-  float Navigation::findClosestObstacle() {
+  float Navigation::findClosestObstacle(float curvature) {
     float min_path_len = HORIZON;
     for (Eigen::Vector2f v : point_cloud_) {
       // calculate free path length for each point
-      float path_len = calculateFreePathLength(v);
+      float path_len = calculateFreePathLength(v, curvature);
       assert(path_len >= 0);
       // cout << "path_len: " << path_len << endl;
       if (path_len < min_path_len) {
@@ -229,20 +221,75 @@ namespace navigation
     return min_path_len;
   }
 
+  /*
+    freePathLength: 0-HORIZON
+    clearance:
+    goalDist: 0-HORIZON
+  */
+  float Navigation::scoreFunction(float curvature) {
+    const float INTERVAL = 0.05;
+    float current_goal_dist = HORIZON;
+    float w_clearance = 0.0;
+    float w_goal_dist = 1.0;
+    float clearance = 0.0;
+    float free_path_length = findClosestObstacle(curvature);
+    float travel_distance = (calculateLatencyVelocity() + calculateNextVelocity()) / 2 * INTERVAL;
+    
+    float next_goal_dist;
+    if(curvature == 0) {
+      next_goal_dist = current_goal_dist - travel_distance;
+    } else {
+      float angle = travel_distance * curvature;
+      float x = sin(angle) / curvature;
+      float y = (1 - cos(angle)) / curvature;
+      next_goal_dist = sqrt(pow(current_goal_dist - x, 2) + pow(y, 2));
+    }
+    
+    return free_path_length +  w_clearance * clearance + w_goal_dist * (HORIZON - next_goal_dist);
+  }
+
+  /* 
+   * check all possible curvatures
+   * store remaining_dist for each curvature
+   */ 
+  struct PathOption Navigation::pickBestPathOption() {
+    float MIN_CURVATURE = -1.0 / CAR_WIDTH_SAFE; // TODO: fix me
+    float MAX_CURVATURE = 1.0 / CAR_WIDTH_SAFE; // TODO: fix me
+
+    struct PathOption best_path;
+    const float CURVATURE_STEP = 0.1;
+
+    float best_score = 0.0;
+    for (float c = MIN_CURVATURE; c <= MAX_CURVATURE; c += CURVATURE_STEP) {
+      float score = scoreFunction(c);
+      if (score > best_score) {
+        best_path.curvature = c;
+        best_path.clearance = 0;
+        best_path.free_path_length = findClosestObstacle(c);
+        best_score = score;
+      }
+    }
+    
+    return best_path;
+  }
+
   // Decides whether to accelerate (4.0), decelerate (-4), or maintain velocity (0)
-  void Navigation::makeControlDecision()
+  float Navigation::makeControlDecision()
   {
+    // Pick best path option here
+    struct PathOption best_path = pickBestPathOption();
+    
     float curr_velocity = calculateLatencyVelocity();
-    float remaining_dist = findClosestObstacle() - calculateLatencyDistance();
+    float remaining_dist = best_path.free_path_length - calculateLatencyDistance();
     float stopping_dist = -1 * pow(curr_velocity, 2) / (2 * DECELERATION);
 
     cout << "stopping_dist: " << stopping_dist << ", remaining_dist: " << remaining_dist
-         << ", Obstacle: " << findClosestObstacle() << ", latency dist: " << calculateLatencyDistance() << ", velocity: " << curr_velocity << endl;
+         << ", Obstacle: " << best_path.free_path_length << ", latency dist: " << calculateLatencyDistance() << ", velocity: " << curr_velocity << endl;
     if (stopping_dist >= remaining_dist)
     {
       acceleration_ = DECELERATION;
     }
-    else if (stopping_dist < remaining_dist && curr_velocity < MAX_VELOCITY)
+    else if (abs(stopping_dist - remaining_dist) > kEpsilon && curr_velocity < MAX_VELOCITY)
     {
       acceleration_ = ACCELERATION;
     }
@@ -250,6 +297,8 @@ namespace navigation
     {
       acceleration_ = 0;
     }
+
+    return best_path.curvature;
   }
 
   // takes in the acceleration determined by makeControlDecision() and the current
@@ -260,7 +309,7 @@ namespace navigation
     float final_velocity = velocity + acceleration_ * 0.05 < MAX_VELOCITY ? velocity + acceleration_ * 0.05 : MAX_VELOCITY;
     // cout << "final_velocity " << final_velocity << endl;
     return final_velocity > 0 ? final_velocity : 0;
-  }
+  }  
 
   void Navigation::Run()
   {
@@ -269,26 +318,19 @@ namespace navigation
     // Clear previous visualizations.
     visualization::ClearVisualizationMsg(local_viz_msg_);
     visualization::ClearVisualizationMsg(global_viz_msg_);
-    visualization::DrawCross(nav_goal_loc_, 0.5, 0x0dde30, global_viz_msg_);
 
     // If odometry has not been initialized, we can't do anything.
     if (!odom_initialized_)
       return;
     // The control iteration goes here.
     // Feel free to make helper functions to structure the control appropriately.
-    if (nav_goal_loc_.x() - robot_loc_.x() != 0 || nav_goal_loc_.y() - robot_loc_.y() != 0)
-    {
-      makeControlDecision();
+
+      drive_msg_.curvature = makeControlDecision();
       // cout << "acceleration" << acceleration_ << endl;
       drive_msg_.velocity = calculateNextVelocity();
       // cout << "drive_msg_.velocity " << drive_msg_.velocity << endl;
-      drive_msg_.curvature = 0;
-    }
-    else
-    {
-      drive_msg_.velocity = 0;
-      drive_msg_.curvature = 0;
-    }
+      visualization::DrawPathOption(drive_msg_.curvature, 1, 0, local_viz_msg_);
+
 
     // The latest observed point cloud is accessible via "point_cloud_"
 

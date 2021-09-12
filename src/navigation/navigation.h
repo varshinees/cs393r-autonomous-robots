@@ -61,12 +61,13 @@ class Navigation {
                          double time);
   float calculateLatencyDistance();
   float calculateLatencyVelocity();
-  float calculateFreePathLength(const Eigen::Vector2f& p);
+  float calculateFreePathLength(const Eigen::Vector2f& p, float curvature);
   float calculateGoalDist();
-  void makeControlDecision();
+  float makeControlDecision();
   float calculateNextVelocity();
-  float findClosestObstacle();
-
+  float findClosestObstacle(float curvature);
+  float scoreFunction(float curvature);
+  struct PathOption pickBestPathOption();
 
   // Main function called continously from main
   void Run();
@@ -116,6 +117,15 @@ class Navigation {
 
   const float EPSILON = 0.05;
   const float HORIZON = 4.0;
+
+  // car constant
+  const float SAFE_MARGIN = 0.1; // TODO: fix me
+  const float CAR_LENGTH = 0.3;  // TODO: fix me
+  const float CAR_LENGTH_SAFE = CAR_LENGTH + SAFE_MARGIN * 2;
+  const float CAR_BASE = 0.2;  // TODO: fix me
+  const float CAR_WIDTH = 0.2; // TODO: fix me
+  const float CAR_WIDTH_SAFE = CAR_WIDTH + SAFE_MARGIN * 2;
+  const float LASER_X = 0.2;
 };
 
 }  // namespace navigation
