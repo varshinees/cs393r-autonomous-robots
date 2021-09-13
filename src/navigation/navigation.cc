@@ -148,7 +148,7 @@ namespace navigation
     float x = p.x() - LASER_X;
     float y = p.y();
 
-    if (curvature == 0)
+    if (curvature <= kEpsilon && curvature >= -kEpsilon)
     {
       // check if the goal is in front of the car
       if (y <= CAR_WIDTH_SAFE && y >= -CAR_WIDTH_SAFE && x >= (CAR_LENGTH_SAFE + CAR_BASE) / 2)
