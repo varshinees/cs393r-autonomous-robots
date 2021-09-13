@@ -120,10 +120,10 @@ class Navigation {
 
   // car constant
   const float SAFE_MARGIN = 0.1; // TODO: fix me
-  const float CAR_LENGTH = 0.3;  // TODO: fix me
+  const float CAR_LENGTH = 0.4826;  // TODO: fix me
   const float CAR_LENGTH_SAFE = CAR_LENGTH + SAFE_MARGIN * 2;
-  const float CAR_BASE = 0.2;  // TODO: fix me
-  const float CAR_WIDTH = 0.2; // TODO: fix me
+  const float CAR_BASE = 0.343;  // TODO: fix me
+  const float CAR_WIDTH = 0.2667; // TODO: fix me
   const float CAR_WIDTH_SAFE = CAR_WIDTH + SAFE_MARGIN * 2;
   const float LASER_X = 0.2;
 };

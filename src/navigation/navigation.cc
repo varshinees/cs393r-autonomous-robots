@@ -253,8 +253,10 @@ namespace navigation
    * store remaining_dist for each curvature
    */ 
   struct PathOption Navigation::pickBestPathOption() {
-    float MIN_CURVATURE = -1.0 / CAR_WIDTH_SAFE; // TODO: fix me
-    float MAX_CURVATURE = 1.0 / CAR_WIDTH_SAFE; // TODO: fix me
+    // float MIN_CURVATURE = -1.0 / CAR_WIDTH_SAFE; // TODO: fix me
+    // float MAX_CURVATURE = 1.0 / CAR_WIDTH_SAFE; // TODO: fix me
+    float MIN_CURVATURE = -1.7857;
+    float MAX_CURVATURE = 1.7857;
 
     struct PathOption best_path;
     const float CURVATURE_STEP = 0.1;
