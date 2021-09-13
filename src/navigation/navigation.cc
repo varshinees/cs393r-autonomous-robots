@@ -184,7 +184,6 @@ namespace navigation
     {                   // will not hit obstacle
       theta = 2 * M_PI; // upper bound
     }
-
     return theta * r_c;
   }
 
@@ -211,7 +210,7 @@ namespace navigation
     for (Eigen::Vector2f v : point_cloud_) {
       // calculate free path length for each point
       float path_len = calculateFreePathLength(v, curvature);
-      assert(path_len >= 0);
+
       // cout << "path_len: " << path_len << endl;
       if (path_len < min_path_len) {
         min_path_len = path_len;
@@ -258,10 +257,10 @@ namespace navigation
     float MIN_CURVATURE = -1.7857;
     float MAX_CURVATURE = 1.7857;
 
-    struct PathOption best_path;
+    struct PathOption best_path = {0, 0, 0, Vector2f(0,0), Vector2f(0,0)};
     const float CURVATURE_STEP = 0.1;
 
-    float best_score = 0.0;
+    float best_score = -100000.0;
     for (float c = MIN_CURVATURE; c <= MAX_CURVATURE; c += CURVATURE_STEP) {
       float score = scoreFunction(c);
       if (score > best_score) {
@@ -271,7 +270,6 @@ namespace navigation
         best_score = score;
       }
     }
-    
     return best_path;
   }
 
