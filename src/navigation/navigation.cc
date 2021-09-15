@@ -145,21 +145,25 @@ namespace navigation
   float Navigation::calculateFreePathLength(const Eigen::Vector2f &p, float curvature)
   {
     // TODO: fix me. assuming p is in the map fram
-    float x = p.x() - LASER_X;
+    // Get obstacle's location
+    float x = p.x() + LASER_X;
     float y = p.y();
 
     if (curvature <= kEpsilon && curvature >= -kEpsilon)
     {
       // check if the goal is in front of the car
-      if (y <= CAR_WIDTH_SAFE && y >= -CAR_WIDTH_SAFE && x >= (CAR_LENGTH_SAFE + CAR_BASE) / 2)
+      if (y <= CAR_WIDTH_SAFE && y >= -CAR_WIDTH_SAFE && x >= (CAR_LENGTH_SAFE + CAR_BASE) / 2) {
         return x - (CAR_LENGTH_SAFE + CAR_BASE) / 2 >= 0 ? x - (CAR_LENGTH_SAFE + CAR_BASE) / 2 : 0;
-      else
+      } else {
         return HORIZON;
+      }
+        
     }
 
     // distance from base_link frame origin to center of turning
     float r_c = 1 / curvature;
     r_c = r_c > 0 ? r_c : -r_c;
+    
     // distance from center of turning to the goal
     float r_goal = sqrt(pow(x, 2) + pow((r_c - y), 2));
 
@@ -172,19 +176,36 @@ namespace navigation
     bool hit_front = r_goal >= r_inner_front && r_goal <= r_outer_front;
 
     float theta = 0.0;
-    if (hit_front)
-    {
-      theta = asin(x / r_goal) - asin((CAR_LENGTH_SAFE + CAR_BASE) / 2 / r_goal);
+    float alpha = asin(x / r_goal);
+    float beta;
+    if (hit_front) {
+      beta = asin((CAR_LENGTH_SAFE + CAR_BASE) / 2 / r_goal);
+    } else if (hit_side) {
+      beta = acos((r_c - CAR_WIDTH_SAFE / 2) / r_goal);
+    } 
+
+    if (hit_front || hit_side) {
+      if (x >= 0.0 && abs(y) <= r_c ) {
+        theta = alpha - beta;
+      } else if (x >= 0.0 && abs(y) > r_c) {
+        theta = M_PI - alpha - beta;
+      } else if (x < 0.0 && abs(y) > r_c) {
+        // theta = 0.0;
+        theta = M_PI - alpha - beta; // alpha < 0
+      } else {
+        // theta = 0.0;
+        theta = 2 * M_PI + alpha - beta; // alpha < 0
+      } 
+    } else {
+      theta = 2 * M_PI;
     }
-    else if (hit_side)
-    {
-      theta = asin(x / r_goal) - acos((r_c - CAR_WIDTH_SAFE / 2) / r_goal);
+    if(theta < 0) {
+      // printf("theta: %.2f, x: %.2f, y: %.2f, r_c: %.2f, alpha: %.2f, beta: %.2f\n", theta, x, y, r_c, alpha, beta);
+      // if (hit_front) printf("hit_front\n");
+      // if (hit_side)  printf("hit_side\n");
+      theta = 0;
     }
-    else
-    {                   // will not hit obstacle
-      theta = 2 * M_PI; // upper bound
-    }
-    return theta * r_c;
+    return theta * r_c > HORIZON ? HORIZON : theta * r_c;
   }
 
   // float Navigation::calculateGoalDist() {
@@ -229,7 +250,7 @@ namespace navigation
     //const float INTERVAL = 0.05;
     //float current_goal_dist = HORIZON;
     float w_clearance = 0.0;
-    float w_goal_dist = 3.0;
+    float w_goal_dist = 5.0;
     float clearance = 0.0;
     float free_path_length = findClosestObstacle(curvature);
     //float travel_distance = (calculateLatencyVelocity() + calculateNextVelocity()) / 2 * INTERVAL;
