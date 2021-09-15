@@ -116,7 +116,7 @@ class Navigation {
   const float ACCELERATION = 4.0;
 
   const float EPSILON = 0.05;
-  const float HORIZON = 4.0;
+  const float HORIZON = 10.0;
 
   // car constant
   const float SAFE_MARGIN = 0.1; // TODO: fix me
@@ -126,6 +126,8 @@ class Navigation {
   const float CAR_WIDTH = 0.2667; // TODO: fix me
   const float CAR_WIDTH_SAFE = CAR_WIDTH + SAFE_MARGIN * 2;
   const float LASER_X = 0.2;
+  float MIN_CURVATURE = -1.7857;
+  float MAX_CURVATURE = 1.7857;
 };
 
 }  // namespace navigation

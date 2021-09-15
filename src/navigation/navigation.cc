@@ -126,16 +126,16 @@ namespace navigation
   float Navigation::calculateLatencyDistance()
   {
     // uses kinematics to determine how far the robot will move
-    float vnorm = sqrt(pow(robot_vel_.x(), 2) + pow(robot_vel_.y(), 2));
+    // float vnorm = drive_msg_.velocity;
     float final_v = calculateLatencyVelocity();
     // assume the car is constantly accelerating
-    return 0.5 * (vnorm + final_v) * LATENCY;
+    return 0.5 * (drive_msg_.velocity + final_v) * LATENCY;
   }
 
   // calculates what the velocity will be after the latency period, capping it at max
   float Navigation::calculateLatencyVelocity()
   {
-    float vnorm = sqrt(pow(robot_vel_.x(), 2) + pow(robot_vel_.y(), 2));
+    float vnorm = drive_msg_.velocity;
     float final_velocity = vnorm + acceleration_ * LATENCY < MAX_VELOCITY ? vnorm + acceleration_ * LATENCY : MAX_VELOCITY;
     // cout << "acceleration_: " << acceleration_ << endl;
     return final_velocity > 0 ? final_velocity : 0;
@@ -168,8 +168,8 @@ namespace navigation
     float r_inner_front = 0.5 * sqrt(pow(2 * r_c - CAR_WIDTH_SAFE, 2) + pow(CAR_BASE + CAR_LENGTH_SAFE, 2));
     float r_outer_front = 0.5 * sqrt(pow(2 * r_c + CAR_WIDTH_SAFE, 2) + pow(CAR_BASE + CAR_LENGTH_SAFE, 2));
 
-    bool hit_front = r_goal >= r_inner_back && r_goal <= r_inner_front;
-    bool hit_side = r_goal >= r_inner_front && r_goal <= r_outer_front;
+    bool hit_side = r_goal >= r_inner_back && r_goal <= r_inner_front;
+    bool hit_front = r_goal >= r_inner_front && r_goal <= r_outer_front;
 
     float theta = 0.0;
     if (hit_front)
@@ -226,25 +226,27 @@ namespace navigation
     goalDist: 0-HORIZON
   */
   float Navigation::scoreFunction(float curvature) {
-    const float INTERVAL = 0.05;
-    float current_goal_dist = HORIZON;
+    //const float INTERVAL = 0.05;
+    //float current_goal_dist = HORIZON;
     float w_clearance = 0.0;
-    float w_goal_dist = 1.0;
+    float w_goal_dist = 3.0;
     float clearance = 0.0;
     float free_path_length = findClosestObstacle(curvature);
-    float travel_distance = (calculateLatencyVelocity() + calculateNextVelocity()) / 2 * INTERVAL;
+    //float travel_distance = (calculateLatencyVelocity() + calculateNextVelocity()) / 2 * INTERVAL;
     
-    float next_goal_dist;
-    if(curvature == 0) {
-      next_goal_dist = current_goal_dist - travel_distance;
-    } else {
-      float angle = travel_distance * curvature;
-      float x = sin(angle) / curvature;
-      float y = (1 - cos(angle)) / curvature;
-      next_goal_dist = sqrt(pow(current_goal_dist - x, 2) + pow(y, 2));
-    }
+    // float next_goal_dist;
+    // if(curvature == 0) {
+    //   next_goal_dist = current_goal_dist - travel_distance;
+    // } else {
+    //   float angle = travel_distance * curvature;
+    //   float x = sin(angle) / curvature;
+    //   float y = (1 - cos(angle)) / curvature;
+    //   next_goal_dist = sqrt(pow(current_goal_dist - x, 2) + pow(y, 2));
+    // }
     
-    return free_path_length +  w_clearance * clearance + w_goal_dist * (HORIZON - next_goal_dist);
+    //return free_path_length +  w_clearance * clearance + w_goal_dist * (HORIZON - next_goal_dist);
+    return free_path_length +  w_clearance * clearance + w_goal_dist * (MAX_CURVATURE - curvature);
+
   }
 
   /* 
@@ -254,14 +256,14 @@ namespace navigation
   struct PathOption Navigation::pickBestPathOption() {
     // float MIN_CURVATURE = -1.0 / CAR_WIDTH_SAFE; // TODO: fix me
     // float MAX_CURVATURE = 1.0 / CAR_WIDTH_SAFE; // TODO: fix me
-    float MIN_CURVATURE = -1.7857;
-    float MAX_CURVATURE = 1.7857;
+
 
     struct PathOption best_path = {0, 0, 0, Vector2f(0,0), Vector2f(0,0)};
     const float CURVATURE_STEP = 0.1;
 
     float best_score = -100000.0;
     for (float c = MIN_CURVATURE; c <= MAX_CURVATURE; c += CURVATURE_STEP) {
+      visualization::DrawPathOption(c, findClosestObstacle(c), 0, local_viz_msg_);
       float score = scoreFunction(c);
       if (score > best_score) {
         best_path.curvature = c;
