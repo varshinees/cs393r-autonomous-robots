@@ -56,7 +56,7 @@ namespace
   VisualizationMsg global_viz_msg_;
   AckermannCurvatureDriveMsg drive_msg_;
   // Epsilon value for handling limited numerical precision.
-  const float kEpsilon = 1e-4;
+  const float kEpsilon = 1e-3;
 } //namespace
 
 namespace navigation
@@ -81,6 +81,7 @@ namespace navigation
         "map", "navigation_global");
     InitRosHeader("base_link", &drive_msg_.header);
     acceleration_ = 0.0;
+    next_acceleration = 4.0;
   }
 
   void Navigation::SetNavGoal(const Vector2f &loc, float angle)
@@ -117,7 +118,6 @@ namespace navigation
   void Navigation::ObservePointCloud(const vector<Vector2f> &cloud,
                                      double time)
   {
-    cout << "inside ObservePointCloud" << endl;
     point_cloud_ = cloud;
   }
 
@@ -126,16 +126,16 @@ namespace navigation
   float Navigation::calculateLatencyDistance()
   {
     // uses kinematics to determine how far the robot will move
-    // float vnorm = drive_msg_.velocity;
+    float vnorm = sqrt(pow(robot_vel_.x(), 2) + pow(robot_vel_.y(), 2));;
     float final_v = calculateLatencyVelocity();
     // assume the car is constantly accelerating
-    return 0.5 * (drive_msg_.velocity + final_v) * LATENCY;
+    return 0.5 * (vnorm + final_v) * LATENCY;
   }
 
   // calculates what the velocity will be after the latency period, capping it at max
   float Navigation::calculateLatencyVelocity()
   {
-    float vnorm = drive_msg_.velocity;
+    float vnorm = sqrt(pow(robot_vel_.x(), 2) + pow(robot_vel_.y(), 2));
     float final_velocity = vnorm + acceleration_ * LATENCY < MAX_VELOCITY ? vnorm + acceleration_ * LATENCY : MAX_VELOCITY;
     // cout << "acceleration_: " << acceleration_ << endl;
     return final_velocity > 0 ? final_velocity : 0;
@@ -266,7 +266,7 @@ namespace navigation
     // }
     
     //return free_path_length +  w_clearance * clearance + w_goal_dist * (HORIZON - next_goal_dist);
-    return free_path_length +  w_clearance * clearance + w_goal_dist * (MAX_CURVATURE - curvature);
+    return free_path_length +  w_clearance * clearance + w_goal_dist * (MAX_CURVATURE - abs(curvature));
 
   }
 
@@ -275,10 +275,6 @@ namespace navigation
    * store remaining_dist for each curvature
    */ 
   struct PathOption Navigation::pickBestPathOption() {
-    // float MIN_CURVATURE = -1.0 / CAR_WIDTH_SAFE; // TODO: fix me
-    // float MAX_CURVATURE = 1.0 / CAR_WIDTH_SAFE; // TODO: fix me
-
-
     struct PathOption best_path = {0, 0, 0, Vector2f(0,0), Vector2f(0,0)};
     const float CURVATURE_STEP = 0.1;
 
@@ -305,20 +301,38 @@ namespace navigation
     float curr_velocity = calculateLatencyVelocity();
     float remaining_dist = best_path.free_path_length - calculateLatencyDistance();
     float stopping_dist = -1 * pow(curr_velocity, 2) / (2 * DECELERATION);
-
-    cout << "stopping_dist: " << stopping_dist << ", remaining_dist: " << remaining_dist
-         << ", Obstacle: " << best_path.free_path_length << ", latency dist: " << calculateLatencyDistance() << ", velocity: " << curr_velocity << endl;
-    if (stopping_dist >= remaining_dist)
+    // printf("stopping_dist: %.2f, remaining_dist: %.2f, velocity: %.2f, drive_msg_.velocity: %.2f, timestamp: %.2f, timenow: %.2f\n", 
+    //     stopping_dist, remaining_dist, curr_velocity, drive_msg_.velocity, drive_msg_.header.stamp, ros::Time::now());
+    printf("stopping_dist: %.5f, remaining_dist: %.5f, Obstacle: %.3f, latency_dist: %.3f, \n drive_msg_.velocity: %.2f, velocity: %.2f, vnorm: %.2f\n", 
+        stopping_dist, remaining_dist, best_path.free_path_length, calculateLatencyDistance(),
+        drive_msg_.velocity, curr_velocity, 
+        sqrt(pow(robot_vel_.x(), 2) + pow(robot_vel_.y(), 2)) );
+    cout << ", timestamp: " << drive_msg_.header.stamp 
+        << ", timenow: " << ros::Time::now() << endl;
+    // cout << "stopping_dist: " << stopping_dist 
+    //     << ", remaining_dist: " << remaining_dist
+    //     << ", Obstacle: " << best_path.free_path_length 
+    //     << ", latency dist: " << calculateLatencyDistance() 
+    //     << ", velocity: " << curr_velocity 
+    //     << ", drive_msg_.velocity: " << drive_msg_.velocity 
+    //     << ", timestamp: " << drive_msg_.header.stamp 
+    //     << ", timenow: " << ros::Time::now() << endl;
+    acceleration_ = next_acceleration;
+    if ( stopping_dist >= remaining_dist)
     {
-      acceleration_ = DECELERATION;
+      next_acceleration = DECELERATION;
     }
     else if (abs(stopping_dist - remaining_dist) > kEpsilon && curr_velocity < MAX_VELOCITY)
     {
-      acceleration_ = ACCELERATION;
+      next_acceleration = ACCELERATION;
+    }
+    else if (remaining_dist <= kEpsilon)
+    {
+      next_acceleration = DECELERATION;
     }
     else
     {
-      acceleration_ = 0;
+      next_acceleration = 0;
     }
 
     return best_path.curvature;
@@ -326,10 +340,13 @@ namespace navigation
 
   // takes in the acceleration determined by makeControlDecision() and the current
   // velocity to figure out what the velocity should be by the next time stamp
+  // need to use next_acceleration
   float Navigation::calculateNextVelocity()
   {
     float velocity = calculateLatencyVelocity();
-    float final_velocity = velocity + acceleration_ * 0.05 < MAX_VELOCITY ? velocity + acceleration_ * 0.05 : MAX_VELOCITY;
+    printf("calculateNextVelocity acceleration_ %.2f next_acceleration: %.2f velocity: %.2f\n", 
+      acceleration_, next_acceleration, velocity);
+    float final_velocity = velocity + next_acceleration * LATENCY < MAX_VELOCITY ? velocity + next_acceleration * LATENCY : MAX_VELOCITY;
     // cout << "final_velocity " << final_velocity << endl;
     return final_velocity > 0 ? final_velocity : 0;
   }  
@@ -342,6 +359,36 @@ namespace navigation
     visualization::ClearVisualizationMsg(local_viz_msg_);
     visualization::ClearVisualizationMsg(global_viz_msg_);
 
+    // Clear previous visualizations.
+    visualization::ClearVisualizationMsg(local_viz_msg_);
+    visualization::ClearVisualizationMsg(global_viz_msg_);
+
+    visualization::DrawLine(Eigen::Vector2f((CAR_BASE - CAR_LENGTH_SAFE)/2, CAR_WIDTH_SAFE/2),
+                            Eigen::Vector2f((CAR_BASE - CAR_LENGTH_SAFE)/2, -CAR_WIDTH_SAFE/2),
+                            0x000000,
+                            local_viz_msg_);
+    // right
+    visualization::DrawLine(Eigen::Vector2f((CAR_BASE + CAR_LENGTH_SAFE)/2, CAR_WIDTH_SAFE/2),
+              Eigen::Vector2f((CAR_BASE + CAR_LENGTH_SAFE)/2, -CAR_WIDTH_SAFE/2),
+              0x000000,
+              local_viz_msg_);
+    // up
+    visualization::DrawLine(Eigen::Vector2f((CAR_BASE - CAR_LENGTH_SAFE)/2, CAR_WIDTH_SAFE/2),
+                            Eigen::Vector2f((CAR_BASE + CAR_LENGTH_SAFE)/2, CAR_WIDTH_SAFE/2),
+                            0x000000,
+                            local_viz_msg_);
+    // down
+    visualization::DrawLine(Eigen::Vector2f((CAR_BASE - CAR_LENGTH_SAFE)/2, -CAR_WIDTH_SAFE/2),
+                            Eigen::Vector2f((CAR_BASE + CAR_LENGTH_SAFE)/2, -CAR_WIDTH_SAFE/2),
+                            0x000000,
+                            local_viz_msg_);
+
+    // draw point cloud
+    for (Eigen::Vector2f v : point_cloud_) {
+      Eigen::Vector2f vprime(v.x()+0.2, v.y());
+      visualization::DrawPoint(vprime, 0xff00d4, local_viz_msg_);
+    }
+
     // If odometry has not been initialized, we can't do anything.
     if (!odom_initialized_)
       return;
@@ -351,7 +398,10 @@ namespace navigation
       drive_msg_.curvature = makeControlDecision();
       // cout << "acceleration" << acceleration_ << endl;
       drive_msg_.velocity = calculateNextVelocity();
-      // cout << "drive_msg_.velocity " << drive_msg_.velocity << endl;
+      cout << "drive_msg_.velocity " << drive_msg_.velocity 
+          << ", acceleration_ " << acceleration_
+          <<  ", timenow " << ros::Time::now() << endl;
+      printf("\n");
       visualization::DrawPathOption(drive_msg_.curvature, 1, 0, local_viz_msg_);
 
 

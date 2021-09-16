@@ -108,6 +108,7 @@ class Navigation {
 
   // stores the TOC phase
   float acceleration_;
+  float next_acceleration;
 
   // latency constant
   const float LATENCY = 0.1;
@@ -126,8 +127,10 @@ class Navigation {
   const float CAR_WIDTH = 0.2667; // TODO: fix me
   const float CAR_WIDTH_SAFE = CAR_WIDTH + SAFE_MARGIN * 2;
   const float LASER_X = 0.2;
-  float MIN_CURVATURE = -1.7857;
-  float MAX_CURVATURE = 1.7857;
+  // float MIN_CURVATURE = -1.7857;
+  // float MAX_CURVATURE = 1.7857;
+  float MIN_CURVATURE = -1.7;
+  float MAX_CURVATURE = 1.7;
 };
 
 }  // namespace navigation
