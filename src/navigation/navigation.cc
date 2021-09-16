@@ -326,13 +326,13 @@ namespace navigation
     {
       next_acceleration = DECELERATION;
     }
+    else if (remaining_dist <= 0.005)
+    {
+      next_acceleration = DECELERATION;
+    }
     else if (abs(stopping_dist - remaining_dist) > kEpsilon && curr_velocity < MAX_VELOCITY)
     {
       next_acceleration = ACCELERATION;
-    }
-    else if (remaining_dist <= kEpsilon)
-    {
-      next_acceleration = DECELERATION;
     }
     else
     {
@@ -350,7 +350,8 @@ namespace navigation
     float velocity = calculateLatencyVelocity();
     printf("calculateNextVelocity acceleration_ %.2f next_acceleration: %.2f velocity: %.2f\n", 
       acceleration_, next_acceleration, velocity);
-    float final_velocity = velocity + next_acceleration * LATENCY < MAX_VELOCITY ? velocity + next_acceleration * LATENCY : MAX_VELOCITY;
+    // 0.05 is the interval between 2 different navigation run()
+    float final_velocity = velocity + next_acceleration * 0.05 < MAX_VELOCITY ? velocity + next_acceleration * 0.05 : MAX_VELOCITY;
     // cout << "final_velocity " << final_velocity << endl;
     return final_velocity > 0 ? final_velocity : 0;
   }  
