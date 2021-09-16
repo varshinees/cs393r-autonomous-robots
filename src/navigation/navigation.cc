@@ -153,7 +153,11 @@ namespace navigation
     {
       // check if the goal is in front of the car
       if (y <= CAR_WIDTH_SAFE && y >= -CAR_WIDTH_SAFE && x >= (CAR_LENGTH_SAFE + CAR_BASE) / 2) {
-        return x - (CAR_LENGTH_SAFE + CAR_BASE) / 2 >= 0 ? x - (CAR_LENGTH_SAFE + CAR_BASE) / 2 : 0;
+        float ret = x - (CAR_LENGTH_SAFE + CAR_BASE) / 2 >= 0 ? x - (CAR_LENGTH_SAFE + CAR_BASE) / 2 : 0;
+        if (ret >= kEpsilon && ret <= 0.01) {
+          // printf("case1\n");
+        }
+        return ret;
       } else {
         return HORIZON;
       }
@@ -161,11 +165,11 @@ namespace navigation
     }
 
     // distance from base_link frame origin to center of turning
-    float r_c = 1 / curvature;
-    r_c = r_c > 0 ? r_c : -r_c;
+    float r_c = abs(1 / curvature);
+    // r_c = r_c > 0 ? r_c : -r_c;
     
     // distance from center of turning to the goal
-    float r_goal = sqrt(pow(x, 2) + pow((r_c - y), 2));
+    float r_goal = sqrt(pow(x, 2) + pow((r_c - abs(y)), 2));
 
     // distance from center of turning to the car
     float r_inner_back = r_c - CAR_WIDTH_SAFE / 2;
@@ -204,6 +208,13 @@ namespace navigation
       // if (hit_front) printf("hit_front\n");
       // if (hit_side)  printf("hit_side\n");
       theta = 0;
+    }
+    if (theta * r_c >= kEpsilon && theta * r_c <= 0.01) {
+      // printf("case2\n");
+    }
+    if (hit_front || hit_side) {
+      Eigen::Vector2f vprime(x, y);
+      visualization::DrawPoint(vprime, 0x43eb34, local_viz_msg_);
     }
     return theta * r_c > HORIZON ? HORIZON : theta * r_c;
   }
@@ -289,6 +300,7 @@ namespace navigation
         best_score = score;
       }
     }
+    visualization::DrawPathOption(best_path.curvature, best_path.free_path_length, 0, local_viz_msg_);
     return best_path;
   }
 
@@ -309,14 +321,6 @@ namespace navigation
         sqrt(pow(robot_vel_.x(), 2) + pow(robot_vel_.y(), 2)) );
     cout << ", timestamp: " << drive_msg_.header.stamp 
         << ", timenow: " << ros::Time::now() << endl;
-    // cout << "stopping_dist: " << stopping_dist 
-    //     << ", remaining_dist: " << remaining_dist
-    //     << ", Obstacle: " << best_path.free_path_length 
-    //     << ", latency dist: " << calculateLatencyDistance() 
-    //     << ", velocity: " << curr_velocity 
-    //     << ", drive_msg_.velocity: " << drive_msg_.velocity 
-    //     << ", timestamp: " << drive_msg_.header.stamp 
-    //     << ", timenow: " << ros::Time::now() << endl;
     acceleration_ = next_acceleration;
     if ( stopping_dist >= remaining_dist)
     {
@@ -402,8 +406,7 @@ namespace navigation
           << ", acceleration_ " << acceleration_
           <<  ", timenow " << ros::Time::now() << endl;
       printf("\n");
-      visualization::DrawPathOption(drive_msg_.curvature, 1, 0, local_viz_msg_);
-
+      
 
     // The latest observed point cloud is accessible via "point_cloud_"
 
