@@ -68,6 +68,8 @@ class Navigation {
   float findClosestObstacle(float curvature);
   float scoreFunction(float curvature);
   struct PathOption pickBestPathOption();
+  float calculateClearance(float curvature, const Eigen::Vector2f &p, float free_path_length);
+  float findMinClearance(float curvature, float free_path_length);
 
   // Main function called continously from main
   void Run();
