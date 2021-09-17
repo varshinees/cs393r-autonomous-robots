@@ -144,7 +144,11 @@ namespace navigation
   // calculates the distance remaining to the target along a fixed arc
   float Navigation::calculateFreePathLength(const Eigen::Vector2f &p, float curvature)
   {
-    // TODO: fix me. assuming p is in the map fram
+    // if there'sno obstacle, the LIDAR returns its limit
+    if (sqrt(pow(p.x(), 2) + pow(p.y(), 2)) >= HORIZON - kEpsilon) {
+      return HORIZON;
+    }
+    
     // Get obstacle's location
     float x = p.x() + LASER_X;
     float y = p.y();
@@ -165,11 +169,12 @@ namespace navigation
     }
 
     // distance from base_link frame origin to center of turning
-    float r_c = abs(1 / curvature);
-    // r_c = r_c > 0 ? r_c : -r_c;
+    float r_c = 1 / curvature;
     
     // distance from center of turning to the goal
-    float r_goal = sqrt(pow(x, 2) + pow((r_c - abs(y)), 2));
+    float r_goal = sqrt(pow(x, 2) + pow((r_c - y), 2));
+
+    r_c = abs(r_c);
 
     // distance from center of turning to the car
     float r_inner_back = r_c - CAR_WIDTH_SAFE / 2;
@@ -212,10 +217,10 @@ namespace navigation
     if (theta * r_c >= kEpsilon && theta * r_c <= 0.01) {
       // printf("case2\n");
     }
-    // if (hit_front || hit_side) {
-    //   Eigen::Vector2f vprime(x, y);
-    //   visualization::DrawPoint(vprime, 0x43eb34, local_viz_msg_);
-    // }
+    if (hit_front || hit_side) {
+      Eigen::Vector2f vprime(x, y);
+      visualization::DrawPoint(vprime, 0x43eb34, local_viz_msg_);
+    }
     return theta * r_c > HORIZON ? HORIZON : theta * r_c;
   }
 
@@ -253,10 +258,19 @@ namespace navigation
   }
 
   float Navigation::calculateClearance(float curvature, const Eigen::Vector2f &p, float free_path_length) {
-    float bounding_angle = abs(free_path_length * curvature);
-    float r_c = abs(1 / curvature);
     float x = p.x() + LASER_X;
     float y = p.y();
+    
+    if(curvature == 0) {
+      if (x >= (CAR_LENGTH_SAFE + CAR_BASE) / 2 && x < free_path_length) {
+        return abs(y) - CAR_WIDTH_SAFE / 2 ? abs(y) - CAR_WIDTH_SAFE / 2 : 0.0;
+      } else {
+        return HORIZON;
+      }
+    }
+
+    float bounding_angle = abs(free_path_length * curvature);
+    float r_c = abs(1 / curvature);
 
     float theta = atan(x / (r_c - abs(y)));
     float r_goal = sqrt(pow(x, 2) + pow((r_c - abs(y)), 2));
@@ -301,7 +315,7 @@ namespace navigation
   float Navigation::scoreFunction(float curvature) {
     //const float INTERVAL = 0.05;
     //float current_goal_dist = HORIZON;
-    float w_clearance = 1.0;
+    float w_clearance = 0.8;
     float w_goal_dist = 2.0;
     float free_path_length = findClosestObstacle(curvature);
     float clearance = findMinClearance(curvature, free_path_length);
@@ -328,20 +342,23 @@ namespace navigation
    */ 
   struct PathOption Navigation::pickBestPathOption() {
     struct PathOption best_path = {0, 0, 0, Vector2f(0,0), Vector2f(0,0)};
-    const float CURVATURE_STEP = 0.1;
+    const float CURVATURE_STEP = 0.05;
 
     float best_score = -100000.0;
     for (float c = MIN_CURVATURE; c <= MAX_CURVATURE; c += CURVATURE_STEP) {
+      // if (abs(c) <= kEpsilon) r
       visualization::DrawPathOption(c, findClosestObstacle(c), 0, local_viz_msg_);
       float score = scoreFunction(c);
       if (score > best_score) {
         best_path.curvature = c;
-        best_path.clearance = 0;
         best_path.free_path_length = findClosestObstacle(c);
+        best_path.clearance = findMinClearance(c, best_path.free_path_length) + CAR_WIDTH_SAFE / 2;
         best_score = score;
       }
     }
-    visualization::DrawPathOption(best_path.curvature, best_path.free_path_length, 0, local_viz_msg_);
+    // printf(1.)
+    cout << "best_path.clearance: " << best_path.clearance << endl;
+    visualization::DrawPathOption(best_path.curvature, best_path.free_path_length, best_path.clearance, local_viz_msg_);
     return best_path;
   }
 
@@ -353,21 +370,22 @@ namespace navigation
     
     float curr_velocity = calculateLatencyVelocity();
     float remaining_dist = best_path.free_path_length - calculateLatencyDistance();
+    remaining_dist = remaining_dist > 0 ? remaining_dist : 0;
     float stopping_dist = -1 * pow(curr_velocity, 2) / (2 * DECELERATION);
-    printf("stopping_dist: %.2f, remaining_dist: %.2f, velocity: %.2f, drive_msg_.velocity: %.2f\n", 
-        stopping_dist, remaining_dist, curr_velocity, drive_msg_.velocity);
-    // printf("stopping_dist: %.5f, remaining_dist: %.5f, Obstacle: %.3f, latency_dist: %.3f, \n drive_msg_.velocity: %.2f, velocity: %.2f, vnorm: %.2f\n", 
-    //     stopping_dist, remaining_dist, best_path.free_path_length, calculateLatencyDistance(),
-    //     drive_msg_.velocity, curr_velocity, 
-    //     sqrt(pow(robot_vel_.x(), 2) + pow(robot_vel_.y(), 2)) );
-    // cout << ", timestamp: " << drive_msg_.header.stamp 
-    //     << ", timenow: " << ros::Time::now() << endl;
+    // printf("stopping_dist: %.2f, remaining_dist: %.2f, velocity: %.2f, free path len: %.2f, latency dist: %.2f\n", 
+    //     stopping_dist, remaining_dist, curr_velocity, best_path.free_path_length, calculateLatencyDistance());
+    printf("stopping_dist: %.5f, remaining_dist: %.5f, Obstacle: %.3f, latency_dist: %.3f, \n drive_msg_.velocity: %.2f, velocity: %.2f, vnorm: %.2f\n", 
+        stopping_dist, remaining_dist, best_path.free_path_length, calculateLatencyDistance(),
+        drive_msg_.velocity, curr_velocity, 
+        sqrt(pow(robot_vel_.x(), 2) + pow(robot_vel_.y(), 2)) );
+    cout << ", timestamp: " << drive_msg_.header.stamp 
+        << ", timenow: " << ros::Time::now() << endl;
     acceleration_ = next_acceleration;
     if ( stopping_dist >= remaining_dist)
     {
       next_acceleration = DECELERATION;
     }
-    else if (remaining_dist <= 0.005)
+    else if (remaining_dist <= 0.02)
     {
       next_acceleration = DECELERATION;
     }
@@ -379,7 +397,7 @@ namespace navigation
     {
       next_acceleration = 0;
     }
-
+    printf("acceleration_: %.2f, next_acceleration: %.2f\n", acceleration_, next_acceleration);
     return best_path.curvature;
   }
 
@@ -427,10 +445,10 @@ namespace navigation
                             local_viz_msg_);
 
     // draw point cloud
-    // for (Eigen::Vector2f v : point_cloud_) {
-    //   Eigen::Vector2f vprime(v.x()+0.2, v.y());
-    //   visualization::DrawPoint(vprime, 0xff00d4, local_viz_msg_);
-    // }
+    for (Eigen::Vector2f v : point_cloud_) {
+      Eigen::Vector2f vprime(v.x()+0.2, v.y());
+      visualization::DrawPoint(vprime, 0xff00d4, local_viz_msg_);
+    }
 
     // If odometry has not been initialized, we can't do anything.
     if (!odom_initialized_)
