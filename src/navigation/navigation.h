@@ -59,17 +59,6 @@ class Navigation {
   // Updates based on an observed laser scan
   void ObservePointCloud(const std::vector<Eigen::Vector2f>& cloud,
                          double time);
-  float calculateLatencyDistance();
-  float calculateLatencyVelocity();
-  float calculateFreePathLength(const Eigen::Vector2f& p, float curvature);
-  float calculateGoalDist();
-  float makeControlDecision();
-  float calculateNextVelocity();
-  float findClosestObstacle(float curvature);
-  float scoreFunction(float curvature);
-  struct PathOption pickBestPathOption();
-  float calculateClearance(float curvature, const Eigen::Vector2f &p, float free_path_length);
-  float findMinClearance(float curvature, float free_path_length);
 
   // Main function called continously from main
   void Run();
@@ -77,6 +66,30 @@ class Navigation {
   void SetNavGoal(const Eigen::Vector2f& loc, float angle);
 
  private:
+  // Returns the car's velocity after the latency period
+  float calculateLatencyVelocity();
+  // Returns the velocity the car shoud aim for by the next timestamp
+  float calculateNextVelocity();
+  // Returns the distance the car travels during the latency
+  float calculateLatencyDistance();
+  // Returns the distance from the car to point p along a fixed arc
+  float calculateFreePathLength(const Eigen::Vector2f& p, float curvature);
+  // Returns the distance from the car to the closest obstacle along a fixed arc
+  float findClosestObstacle(float curvature);
+  // Returns the distance from point p to the car's sweeping volume
+  float calculateClearance(float curvature, const Eigen::Vector2f &p, float free_path_length);
+  // Returns the distance from the car's sweeping volume to the closest obstacle
+  float findMinClearance(float curvature, float free_path_length);
+  // Returns the score of a curvature while store the path option
+  float scoreFunction(float curvature, struct PathOption &path);
+  // Returns the best path option
+  struct PathOption pickBestPathOption();
+  // Set next curvature and velocity
+  void makeControlDecision();
+  // Draws visualizations
+  void drawVisualizations();
+  // Returns the distance from the car to the goal
+  // float calculateGoalDist();
 
   // Whether odometry has been initialized.
   bool odom_initialized_;
@@ -108,31 +121,35 @@ class Navigation {
   // Navigation goal angle.
   float nav_goal_angle_;
 
-  // stores the TOC phase
+  // Current acceleration (acceleration used in previous control cycle to get current velocity)
   float acceleration_;
+  // Next acceleration (acceleration used in current control cycle to get the next velocity)
   float next_acceleration;
 
-  // latency constant
+  // Latency constants
   const float LATENCY = 0.1;
   const float MAX_VELOCITY = 1.0;
-  const float DECELERATION = -4.0;
   const float ACCELERATION = 4.0;
-
-  const float EPSILON = 0.05;
-  const float HORIZON = 10.0;
-
-  // car constant
-  const float SAFE_MARGIN = 0.1; // TODO: fix me
-  const float CAR_LENGTH = 0.4826;  // TODO: fix me
+  const float DECELERATION = -4.0;
+  
+  // Car constant
+  const float SAFE_MARGIN = 0.1;
+  const float CAR_LENGTH = 0.4826;
   const float CAR_LENGTH_SAFE = CAR_LENGTH + SAFE_MARGIN * 2;
-  const float CAR_BASE = 0.343;  // TODO: fix me
-  const float CAR_WIDTH = 0.2667; // TODO: fix me
+  const float CAR_BASE = 0.343;
+  const float CAR_WIDTH = 0.2667;
   const float CAR_WIDTH_SAFE = CAR_WIDTH + SAFE_MARGIN * 2;
-  const float LASER_X = 0.2;
   // float MIN_CURVATURE = -1.7857;
   // float MAX_CURVATURE = 1.7857;
   float MIN_CURVATURE = -1.7;
   float MAX_CURVATURE = 1.7;
+
+  // LIDAR constants
+  const float LASER_X = 0.2;  // Laser frame's displacement from the base_line frame
+  const float HORIZON = 10.0;  // The observation limit
+
+  // The time interval between two control cycles
+  const float INTERVAL = 0.05;
 };
 
 }  // namespace navigation
