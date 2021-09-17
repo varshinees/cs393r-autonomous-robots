@@ -133,7 +133,7 @@ class Navigation {
   const float DECELERATION = -4.0;
   
   // Car constant
-  const float SAFE_MARGIN = 0.1;
+  const float SAFE_MARGIN = 0.05;
   const float CAR_LENGTH = 0.4826;
   const float CAR_LENGTH_SAFE = CAR_LENGTH + SAFE_MARGIN * 2;
   const float CAR_BASE = 0.343;

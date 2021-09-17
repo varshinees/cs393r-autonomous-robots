@@ -293,7 +293,7 @@ namespace navigation
   }
 
   float Navigation::scoreFunction(float curvature, struct PathOption &path) {
-    float w_clearance = 0.8;
+    float w_clearance = 0.0;
     float w_goal_dist = 2.0;
     
     float free_path_length = findClosestObstacle(curvature);
