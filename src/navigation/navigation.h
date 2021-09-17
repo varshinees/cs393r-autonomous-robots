@@ -123,16 +123,16 @@ class Navigation {
 
   // Current acceleration (acceleration used in previous control cycle to get current velocity)
   float acceleration_;
-  // Next acceleration (acceleration used in current control cycle to get the next velocity)
 
   // Latency constants
-  const float LATENCY = 0.15;
+  const float LATENCY = 0.5;  // simulator
+  // const float LATENCY = 0.15;  // TODO: use real car's latency
   const float MAX_VELOCITY = 1.0;
   const float ACCELERATION = 4.0;
   const float DECELERATION = -4.0;
   
   // Car constant
-  const float SAFE_MARGIN = 0.05;
+  const float SAFE_MARGIN = 0.1;
   const float CAR_LENGTH = 0.4826;
   const float CAR_LENGTH_SAFE = CAR_LENGTH + SAFE_MARGIN * 2;
   const float CAR_BASE = 0.343;
@@ -144,7 +144,6 @@ class Navigation {
   float MAX_CURVATURE = 1.7;
 
   // LIDAR constants
-  const float LASER_X = 0.2;  // Laser frame's displacement from the base_line frame
   const float HORIZON = 10.0;  // The observation limit
 
   // The time interval between two control cycles

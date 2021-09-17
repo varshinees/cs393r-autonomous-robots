@@ -153,7 +153,7 @@ namespace navigation
       return HORIZON;
     
     // Tranform p to from the laser frame to the base_link frame
-    float x = p.x() + LASER_X;
+    float x = p.x();
     float y = p.y();
 
     // The car is going straight
@@ -239,7 +239,7 @@ namespace navigation
   // }
 
   float Navigation::getClearance(float curvature, const Eigen::Vector2f &p, float free_path_length) {
-    float x = p.x() + LASER_X;
+    float x = p.x();
     float y = p.y();
     
     if(abs(curvature) <= kEpsilon) {
@@ -426,7 +426,7 @@ namespace navigation
 
     // draw point cloud
     // for (Eigen::Vector2f v : point_cloud_) {
-    //   Eigen::Vector2f vprime(v.x() + LASER_X, v.y());
+    //   Eigen::Vector2f vprime(v.x(), v.y());
     //   visualization::DrawPoint(vprime, 0xff00d4, local_viz_msg_);
     // }
   }
