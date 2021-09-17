@@ -120,9 +120,13 @@ namespace navigation
     point_cloud_ = cloud;
   }
 
+  float norm(float x, float y) {
+    return sqrt(pow(x, 2) + pow(y, 2));
+  }
+
   float Navigation::getLatencyVelocity()
   {
-    float initial_v = sqrt(pow(robot_vel_.x(), 2) + pow(robot_vel_.y(), 2));
+    float initial_v = norm(robot_vel_.x(), robot_vel_.y());
     float final_v = initial_v + acceleration_ * LATENCY;
     return final_v < MAX_VELOCITY ? (final_v > 0 ? final_v : 0) : MAX_VELOCITY;
   }
@@ -137,7 +141,7 @@ namespace navigation
   float Navigation::getLatencyDistance()
   {
     // Assume the car is constantly accelerating
-    float initial_v = sqrt(pow(robot_vel_.x(), 2) + pow(robot_vel_.y(), 2));;
+    float initial_v = norm(robot_vel_.x(), robot_vel_.y());
     float final_v = getLatencyVelocity();
     return 0.5 * (initial_v + final_v) * LATENCY;
   }
@@ -145,7 +149,7 @@ namespace navigation
   float Navigation::getFreePathLength(const Eigen::Vector2f &p, float curvature)
   {
     // if there's no obstacle, the LIDAR returns its limit
-    if (sqrt(pow(p.x(), 2) + pow(p.y(), 2)) >= HORIZON - kEpsilon)
+    if (norm(p.x(), p.y()) >= HORIZON - kEpsilon)
       return HORIZON;
     
     // Tranform p to from the laser frame to the base_link frame
@@ -166,13 +170,13 @@ namespace navigation
     // Radius of turning
     float r_c = 1 / curvature;
     // Distance from center of turning to p
-    float r_p = sqrt(pow(x, 2) + pow((r_c - y), 2));
+    float r_p = norm(x, r_c - y);
     r_c = abs(r_c);
 
     // Distance from center of turning to the car
     float r_inner_back = r_c - CAR_WIDTH_SAFE / 2;
-    float r_inner_front = 0.5 * sqrt(pow(2 * r_c - CAR_WIDTH_SAFE, 2) + pow(CAR_BASE + CAR_LENGTH_SAFE, 2));
-    float r_outer_front = 0.5 * sqrt(pow(2 * r_c + CAR_WIDTH_SAFE, 2) + pow(CAR_BASE + CAR_LENGTH_SAFE, 2));
+    float r_inner_front = 0.5 * norm(2 * r_c - CAR_WIDTH_SAFE, CAR_BASE + CAR_LENGTH_SAFE);
+    float r_outer_front = 0.5 * norm(2 * r_c + CAR_WIDTH_SAFE, CAR_BASE + CAR_LENGTH_SAFE);
 
     bool hit_side = r_p >= r_inner_back && r_p <= r_inner_front;
     bool hit_front = r_p >= r_inner_front && r_p <= r_outer_front;
@@ -248,7 +252,11 @@ namespace navigation
     }
 
     float bounding_angle = abs(free_path_length * curvature) - kEpsilon;
-    float r_c = abs(1 / curvature);
+    float r_c = 1 / curvature;
+    // Distance from center of turning to p
+    float r_p = norm(x, r_c - y);
+    r_c = abs(r_c);
+
     float theta = 0;
     if (x > 0 && r_c - abs(y) > 0)
       theta = atan(x / (r_c - abs(y)));
@@ -264,12 +272,9 @@ namespace navigation
       theta = M_PI + atan(x / (abs(y) - r_c));
     theta -= asin((CAR_LENGTH_SAFE + CAR_BASE) / 2 / r_c);
 
-    // Distance from center of turning to p
-    float r_p = sqrt(pow(x, 2) + pow((r_c - abs(y)), 2));
-
     // Distance from center of turning to the car
     float r_inner_back = r_c - CAR_WIDTH_SAFE / 2;
-    float r_outer_front = 0.5 * sqrt(pow(2 * r_c + CAR_WIDTH_SAFE, 2) + pow(CAR_BASE + CAR_LENGTH_SAFE, 2));
+    float r_outer_front = 0.5 * norm(2 * r_c + CAR_WIDTH_SAFE, CAR_BASE + CAR_LENGTH_SAFE);
 
     if (theta > 0 && theta < bounding_angle) {
       if (r_p < r_inner_back)  // p is on the inside of the car's arc
@@ -307,7 +312,7 @@ namespace navigation
     //   float angle = travel_distance * curvature;
     //   float x = sin(angle) / curvature;
     //   float y = (1 - cos(angle)) / curvature;
-    //   next_goal_dist = sqrt(pow(current_goal_dist - x, 2) + pow(y, 2));
+    //   next_goal_dist = norm(current_goal_dist - x, y);
     // }
     
     path.curvature = curvature;
@@ -351,8 +356,7 @@ namespace navigation
     //     stopping_dist, remaining_dist, curr_velocity, best_path.free_path_length, getLatencyDistance());
     // printf("stopping_dist: %.5f, remaining_dist: %.5f, Obstacle: %.3f, latency_dist: %.3f, \n drive_msg_.velocity: %.2f, velocity: %.2f, vnorm: %.2f\n", 
     //     stopping_dist, remaining_dist, best_path.free_path_length, getLatencyDistance(),
-    //     drive_msg_.velocity, curr_velocity, 
-    //     sqrt(pow(robot_vel_.x(), 2) + pow(robot_vel_.y(), 2)) );
+    //     drive_msg_.velocity, curr_velocity, norm(robot_vel_.x(), robot_vel_.y()));
 
     // Decides whether to accelerate (4.0), decelerate (-4), or maintain velocity (0)
     float next_acceleration;
