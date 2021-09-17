@@ -249,21 +249,20 @@ namespace navigation
     }
 
     float bounding_angle = abs(free_path_length * curvature) - kEpsilon;
-    float r_c = 1 / curvature;
+    float r_c = abs(1 / curvature);
     float theta = 0;
-    if (x > 0 && r_c - y > 0)
-      theta = atan(x / (r_c - y));
-    else if (x > 0 && r_c == y)
+    if (x > 0 && r_c - abs(y) > 0)
+      theta = atan(x / (r_c - abs(y)));
+    else if (x > 0 && r_c == abs(y))
       theta = M_PI / 2;
-    else if (x > 0 && r_c - y < 0)
-      theta = M_PI - atan(x / (y - r_c));
-    else if (x < 0 && r_c - y > 0)
-      theta = 2 * M_PI - atan(x / (y - r_c));
-    else if (x < 0 && r_c == y)
+    else if (x > 0 && r_c - abs(y) < 0)
+      theta = M_PI - atan(x / (abs(y) - r_c));
+    else if (x < 0 && r_c - abs(y) > 0)
+      theta = 2 * M_PI - atan(x / (abs(y) - r_c));
+    else if (x < 0 && r_c == abs(y))
       theta = 3 * M_PI / 2;
-    else if (x < 0 && r_c - y < 0)
-      theta = M_PI + atan(x / (y - r_c));
-    r_c = abs(r_c);
+    else if (x < 0 && r_c - abs(y) < 0)
+      theta = M_PI + atan(x / (abs(y) - r_c));
     theta -= asin((CAR_LENGTH_SAFE + CAR_BASE) / 2 / r_c);
 
     // Distance from center of turning to p
