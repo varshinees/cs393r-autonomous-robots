@@ -69,7 +69,7 @@ class Navigation {
   // Returns the car's velocity after the latency period
   float calculateLatencyVelocity();
   // Returns the velocity the car shoud aim for by the next timestamp
-  float calculateNextVelocity();
+  float calculateNextVelocity(float acceleration);
   // Returns the distance the car travels during the latency
   float calculateLatencyDistance();
   // Returns the distance from the car to point p along a fixed arc
@@ -124,10 +124,9 @@ class Navigation {
   // Current acceleration (acceleration used in previous control cycle to get current velocity)
   float acceleration_;
   // Next acceleration (acceleration used in current control cycle to get the next velocity)
-  float next_acceleration;
 
   // Latency constants
-  const float LATENCY = 0.1;
+  const float LATENCY = 0.15;
   const float MAX_VELOCITY = 1.0;
   const float ACCELERATION = 4.0;
   const float DECELERATION = -4.0;

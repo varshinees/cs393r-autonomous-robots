@@ -81,7 +81,6 @@ namespace navigation
         "map", "navigation_global");
     InitRosHeader("base_link", &drive_msg_.header);
     acceleration_ = 0.0;
-    next_acceleration = 4.0;
   }
 
   void Navigation::SetNavGoal(const Vector2f &loc, float angle)
@@ -128,10 +127,10 @@ namespace navigation
     return final_v < MAX_VELOCITY ? (final_v > 0 ? final_v : 0) : MAX_VELOCITY;
   }
 
-  float Navigation::calculateNextVelocity()
+  float Navigation::calculateNextVelocity(float acceleration)
   {
     float initial_v = calculateLatencyVelocity();
-    float final_v = initial_v + next_acceleration * INTERVAL;
+    float final_v = initial_v + acceleration * INTERVAL;
     return final_v < MAX_VELOCITY ? final_v > 0 ? final_v : 0 : MAX_VELOCITY;
   }  
 
@@ -154,7 +153,7 @@ namespace navigation
     float y = p.y();
 
     // The car is going straight
-    if (curvature <= kEpsilon && curvature >= -kEpsilon) {
+    if (abs(curvature) <= kEpsilon) {
       // check if the goal is in front of the car
       if (y <= CAR_WIDTH_SAFE && y >= -CAR_WIDTH_SAFE && x >= (CAR_LENGTH_SAFE + CAR_BASE) / 2) {
         float free_path_length = x - (CAR_LENGTH_SAFE + CAR_BASE) / 2;
@@ -239,7 +238,7 @@ namespace navigation
     float x = p.x() + LASER_X;
     float y = p.y();
     
-    if(curvature == 0) {
+    if(abs(curvature) <= kEpsilon) {
       if (x >= (CAR_LENGTH_SAFE + CAR_BASE) / 2 && x < (CAR_LENGTH_SAFE + CAR_BASE) / 2 + free_path_length - kEpsilon) {
         float clearance = abs(y) - CAR_WIDTH_SAFE / 2;
         return clearance > 0 ? clearance : 0;
@@ -354,8 +353,9 @@ namespace navigation
     //     stopping_dist, remaining_dist, best_path.free_path_length, calculateLatencyDistance(),
     //     drive_msg_.velocity, curr_velocity, 
     //     sqrt(pow(robot_vel_.x(), 2) + pow(robot_vel_.y(), 2)) );
-    acceleration_ = next_acceleration;
+
     // Decides whether to accelerate (4.0), decelerate (-4), or maintain velocity (0)
+    float next_acceleration;
     if (stopping_dist >= remaining_dist)
       next_acceleration = DECELERATION;
     else if (remaining_dist <= 0.02)
@@ -365,8 +365,11 @@ namespace navigation
     else
       next_acceleration = 0;
 
+    // cout << " acceleration_ " << acceleration_
+    //      <<  ", next_acceleration " << next_acceleration << endl;
     drive_msg_.curvature = best_path.curvature;
-    drive_msg_.velocity = calculateNextVelocity();
+    drive_msg_.velocity = calculateNextVelocity(next_acceleration);
+    acceleration_ = next_acceleration;
   }
 
   void Navigation::Run()
@@ -384,10 +387,6 @@ namespace navigation
       return;
 
     makeControlDecision();
-    // cout << "drive_msg_.velocity " << drive_msg_.velocity 
-    //     << ", acceleration_ " << acceleration_
-    //     <<  ", timenow " << ros::Time::now() << endl;
-    // printf("\n");
 
     // Add timestamps to all messages.
     local_viz_msg_.header.stamp = ros::Time::now();
