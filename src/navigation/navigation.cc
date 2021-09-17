@@ -240,8 +240,8 @@ namespace navigation
     float y = p.y();
     
     if(curvature == 0) {
-      if (x >= (CAR_LENGTH_SAFE + CAR_BASE) / 2 && x < CAR_LENGTH_SAFE + free_path_length - kEpsilon) {
-        float clearance = abs(y) - CAR_WIDTH_SAFE;
+      if (x >= (CAR_LENGTH_SAFE + CAR_BASE) / 2 && x < (CAR_LENGTH_SAFE + CAR_BASE) / 2 + free_path_length - kEpsilon) {
+        float clearance = abs(y) - CAR_WIDTH_SAFE / 2;
         return clearance > 0 ? clearance : 0;
       } else {
         return HORIZON;
@@ -293,7 +293,7 @@ namespace navigation
   }
 
   float Navigation::scoreFunction(float curvature, struct PathOption &path) {
-    float w_clearance = 0.0;
+    float w_clearance = 0.5;
     float w_goal_dist = 2.0;
     
     float free_path_length = findClosestObstacle(curvature);
