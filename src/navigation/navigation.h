@@ -150,6 +150,7 @@ class Navigation {
 
   // The time interval between two control cycles
   const float INTERVAL = 0.05;
+  const float REMAINING_DIST_BOUND = 0.01;
 };
 
 }  // namespace navigation

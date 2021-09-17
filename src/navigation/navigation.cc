@@ -150,7 +150,7 @@ namespace navigation
       return HORIZON;
     
     // Tranform p to from the laser frame to the base_link frame
-    float x = p.x() + LASER_X;
+    float x = p.x();
     float y = p.y();
 
     // The car is going straight
@@ -236,10 +236,10 @@ namespace navigation
   // }
 
   float Navigation::calculateClearance(float curvature, const Eigen::Vector2f &p, float free_path_length) {
-    float x = p.x() + LASER_X;
+    float x = p.x();
     float y = p.y();
     
-    if(curvature == 0) {
+    if(abs(curvature) <= kEpsilon) {
       if (x >= (CAR_LENGTH_SAFE + CAR_BASE) / 2 && x < (CAR_LENGTH_SAFE + CAR_BASE) / 2 + free_path_length - kEpsilon) {
         float clearance = abs(y) - CAR_WIDTH_SAFE / 2;
         return clearance > 0 ? clearance : 0;
@@ -350,21 +350,26 @@ namespace navigation
     float stopping_dist = -1 * pow(curr_velocity, 2) / (2 * DECELERATION);
     // printf("stopping_dist: %.2f, remaining_dist: %.2f, velocity: %.2f, free path len: %.2f, latency dist: %.2f\n", 
     //     stopping_dist, remaining_dist, curr_velocity, best_path.free_path_length, calculateLatencyDistance());
-    // printf("stopping_dist: %.5f, remaining_dist: %.5f, Obstacle: %.3f, latency_dist: %.3f, \n drive_msg_.velocity: %.2f, velocity: %.2f, vnorm: %.2f\n", 
-    //     stopping_dist, remaining_dist, best_path.free_path_length, calculateLatencyDistance(),
-    //     drive_msg_.velocity, curr_velocity, 
-    //     sqrt(pow(robot_vel_.x(), 2) + pow(robot_vel_.y(), 2)) );
+    printf("stopping_dist: %.5f, remaining_dist: %.5f, Obstacle: %.3f, latency_dist: %.3f, \n drive_msg_.velocity: %.2f, velocity: %.2f, vnorm: %.2f\n", 
+        stopping_dist, remaining_dist, best_path.free_path_length, calculateLatencyDistance(),
+        drive_msg_.velocity, curr_velocity, 
+        sqrt(pow(robot_vel_.x(), 2) + pow(robot_vel_.y(), 2)) );
     acceleration_ = next_acceleration;
+    
     // Decides whether to accelerate (4.0), decelerate (-4), or maintain velocity (0)
-    if (stopping_dist >= remaining_dist)
+    if (stopping_dist >= remaining_dist) {
+      printf("case1\n");
+      next_acceleration = DECELERATION; 
+    }
+    else if (remaining_dist <= REMAINING_DIST_BOUND) {
       next_acceleration = DECELERATION;
-    else if (remaining_dist <= 0.02)
-      next_acceleration = DECELERATION;
+      printf("case2\n");
+    }
     else if (abs(stopping_dist - remaining_dist) > kEpsilon && curr_velocity < MAX_VELOCITY)
       next_acceleration = ACCELERATION;
     else
       next_acceleration = 0;
-
+    printf("acceleration_: %.2f, next_acceleration: %.2f\n\n", acceleration_, next_acceleration);
     drive_msg_.curvature = best_path.curvature;
     drive_msg_.velocity = calculateNextVelocity();
   }
@@ -422,10 +427,10 @@ namespace navigation
                             local_viz_msg_);
 
     // draw point cloud
-    // for (Eigen::Vector2f v : point_cloud_) {
-    //   Eigen::Vector2f vprime(v.x() + LASER_X, v.y());
-    //   visualization::DrawPoint(vprime, 0xff00d4, local_viz_msg_);
-    // }
+    for (Eigen::Vector2f v : point_cloud_) {
+      Eigen::Vector2f vprime(v.x(), v.y());
+      visualization::DrawPoint(vprime, 0xff00d4, local_viz_msg_);
+    }
   }
 
 } // namespace navigation
