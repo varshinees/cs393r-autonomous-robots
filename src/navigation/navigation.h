@@ -67,29 +67,29 @@ class Navigation {
 
  private:
   // Returns the car's velocity after the latency period
-  float calculateLatencyVelocity();
+  float getLatencyVelocity();
   // Returns the velocity the car shoud aim for by the next timestamp
-  float calculateNextVelocity(float acceleration);
+  float getNextVelocity(float acceleration);
   // Returns the distance the car travels during the latency
-  float calculateLatencyDistance();
+  float getLatencyDistance();
   // Returns the distance from the car to point p along a fixed arc
-  float calculateFreePathLength(const Eigen::Vector2f& p, float curvature);
+  float getFreePathLength(const Eigen::Vector2f& p, float curvature);
   // Returns the distance from the car to the closest obstacle along a fixed arc
-  float findClosestObstacle(float curvature);
+  float getClosestObstacleDistance(float curvature);
   // Returns the distance from point p to the car's sweeping volume
-  float calculateClearance(float curvature, const Eigen::Vector2f &p, float free_path_length);
+  float getClearance(float curvature, const Eigen::Vector2f &p, float free_path_length);
   // Returns the distance from the car's sweeping volume to the closest obstacle
-  float findMinClearance(float curvature, float free_path_length);
+  float getMinClearance(float curvature, float free_path_length);
   // Returns the score of a curvature while store the path option
-  float scoreFunction(float curvature, struct PathOption &path);
+  float getScore(float curvature, struct PathOption &path);
   // Returns the best path option
-  struct PathOption pickBestPathOption();
+  struct PathOption getBestPathOption();
   // Set next curvature and velocity
   void makeControlDecision();
   // Draws visualizations
   void drawVisualizations();
   // Returns the distance from the car to the goal
-  // float calculateGoalDist();
+  // float getGoalDist();
 
   // Whether odometry has been initialized.
   bool odom_initialized_;
