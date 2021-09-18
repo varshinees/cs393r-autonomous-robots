@@ -375,12 +375,11 @@ namespace navigation
       next_acceleration = DECELERATION;
     else if (remaining_dist <= 0.02)
       next_acceleration = DECELERATION;
-    }
     else if (abs(stopping_dist - remaining_dist) > kEpsilon && curr_velocity < MAX_VELOCITY)
       next_acceleration = ACCELERATION;
     else
-      // next_acceleration = 0;
-    printf("acceleration_: %.2f, next_acceleration: %.2f\n\n", acceleration_, next_acceleration);
+      next_acceleration = 0;
+    // printf("acceleration_: %.2f, next_acceleration: %.2f\n\n", acceleration_, next_acceleration);
     drive_msg_.curvature = best_path.curvature;
     drive_msg_.velocity = getNextVelocity(next_acceleration);
     acceleration_ = next_acceleration;
