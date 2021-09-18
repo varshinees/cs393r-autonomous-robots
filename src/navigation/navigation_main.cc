@@ -90,7 +90,7 @@ void LaserCallback(const sensor_msgs::LaserScan& msg) {
     const float r = msg.ranges[i];
     const float a = msg.angle_min + i * msg.angle_increment;
     float x = r * cos(a) + kLaserLoc.x();
-    float y = r * sin(a);
+    float y = r * sin(a) + kLaserLoc.y();
     point_cloud_.push_back(Vector2f(x, y));
   }
   navigation_->ObservePointCloud(point_cloud_, msg.header.stamp.toSec());

@@ -81,7 +81,6 @@ namespace navigation
         "map", "navigation_global");
     InitRosHeader("base_link", &drive_msg_.header);
     acceleration_ = 0.0;
-    next_acceleration = 4.0;
   }
 
   void Navigation::SetNavGoal(const Vector2f &loc, float angle)
@@ -121,32 +120,36 @@ namespace navigation
     point_cloud_ = cloud;
   }
 
-  float Navigation::calculateLatencyVelocity()
+  float norm(float x, float y) {
+    return sqrt(pow(x, 2) + pow(y, 2));
+  }
+
+  float Navigation::getLatencyVelocity()
   {
-    float initial_v = sqrt(pow(robot_vel_.x(), 2) + pow(robot_vel_.y(), 2));
+    float initial_v = norm(robot_vel_.x(), robot_vel_.y());
     float final_v = initial_v + acceleration_ * LATENCY;
     return final_v < MAX_VELOCITY ? (final_v > 0 ? final_v : 0) : MAX_VELOCITY;
   }
 
-  float Navigation::calculateNextVelocity()
+  float Navigation::getNextVelocity(float acceleration)
   {
-    float initial_v = calculateLatencyVelocity();
-    float final_v = initial_v + next_acceleration * INTERVAL;
+    float initial_v = getLatencyVelocity();
+    float final_v = initial_v + acceleration * INTERVAL;
     return final_v < MAX_VELOCITY ? final_v > 0 ? final_v : 0 : MAX_VELOCITY;
   }  
 
-  float Navigation::calculateLatencyDistance()
+  float Navigation::getLatencyDistance()
   {
     // Assume the car is constantly accelerating
-    float initial_v = sqrt(pow(robot_vel_.x(), 2) + pow(robot_vel_.y(), 2));;
-    float final_v = calculateLatencyVelocity();
+    float initial_v = norm(robot_vel_.x(), robot_vel_.y());
+    float final_v = getLatencyVelocity();
     return 0.5 * (initial_v + final_v) * LATENCY;
   }
 
-  float Navigation::calculateFreePathLength(const Eigen::Vector2f &p, float curvature)
+  float Navigation::getFreePathLength(const Eigen::Vector2f &p, float curvature)
   {
     // if there's no obstacle, the LIDAR returns its limit
-    if (sqrt(pow(p.x(), 2) + pow(p.y(), 2)) >= HORIZON - kEpsilon)
+    if (norm(p.x(), p.y()) >= HORIZON - kEpsilon)
       return HORIZON;
     
     // Tranform p to from the laser frame to the base_link frame
@@ -154,7 +157,7 @@ namespace navigation
     float y = p.y();
 
     // The car is going straight
-    if (curvature <= kEpsilon && curvature >= -kEpsilon) {
+    if (abs(curvature) <= kEpsilon) {
       // check if the goal is in front of the car
       if (y <= CAR_WIDTH_SAFE && y >= -CAR_WIDTH_SAFE && x >= (CAR_LENGTH_SAFE + CAR_BASE) / 2) {
         float free_path_length = x - (CAR_LENGTH_SAFE + CAR_BASE) / 2;
@@ -167,13 +170,13 @@ namespace navigation
     // Radius of turning
     float r_c = 1 / curvature;
     // Distance from center of turning to p
-    float r_p = sqrt(pow(x, 2) + pow((r_c - y), 2));
+    float r_p = norm(x, r_c - y);
     r_c = abs(r_c);
 
     // Distance from center of turning to the car
     float r_inner_back = r_c - CAR_WIDTH_SAFE / 2;
-    float r_inner_front = 0.5 * sqrt(pow(2 * r_c - CAR_WIDTH_SAFE, 2) + pow(CAR_BASE + CAR_LENGTH_SAFE, 2));
-    float r_outer_front = 0.5 * sqrt(pow(2 * r_c + CAR_WIDTH_SAFE, 2) + pow(CAR_BASE + CAR_LENGTH_SAFE, 2));
+    float r_inner_front = 0.5 * norm(2 * r_c - CAR_WIDTH_SAFE, CAR_BASE + CAR_LENGTH_SAFE);
+    float r_outer_front = 0.5 * norm(2 * r_c + CAR_WIDTH_SAFE, CAR_BASE + CAR_LENGTH_SAFE);
 
     bool hit_side = r_p >= r_inner_back && r_p <= r_inner_front;
     bool hit_front = r_p >= r_inner_front && r_p <= r_outer_front;
@@ -208,16 +211,16 @@ namespace navigation
     return theta * r_c > HORIZON ? HORIZON : theta * r_c;
   }
 
-  float Navigation::findClosestObstacle(float curvature) {
+  float Navigation::getClosestObstacleDistance(float curvature) {
     float min_path_len = HORIZON;
     for (Eigen::Vector2f v : point_cloud_) {
-      float path_len = calculateFreePathLength(v, curvature);
+      float path_len = getFreePathLength(v, curvature);
       min_path_len = path_len < min_path_len ? path_len : min_path_len;
     }
     return min_path_len;
   }
 
-  // float Navigation::calculateGoalDist() {
+  // float Navigation::getGoalDist() {
   //   float x = nav_goal_loc_.x() - robot_loc_.x();
   //   float y = nav_goal_loc_.y() - robot_loc_.y();
     
@@ -235,7 +238,15 @@ namespace navigation
   //   return theta * r_c;
   // }
 
+<<<<<<< HEAD
   float Navigation::calculateClearance(float curvature, const Eigen::Vector2f &p, float free_path_length) {
+=======
+  float Navigation::getClearance(float curvature, const Eigen::Vector2f &p, float free_path_length) {
+    // if there's no obstacle, the LIDAR returns its limit
+    if (norm(p.x(), p.y()) >= HORIZON - kEpsilon)
+      return HORIZON;
+
+>>>>>>> master
     float x = p.x();
     float y = p.y();
     
@@ -249,28 +260,32 @@ namespace navigation
     }
 
     float bounding_angle = abs(free_path_length * curvature) - kEpsilon;
-    float r_c = abs(1 / curvature);
-    float theta = 0;
-    if (x > 0 && r_c - abs(y) > 0)
-      theta = atan(x / (r_c - abs(y)));
-    else if (x > 0 && r_c == abs(y))
-      theta = M_PI / 2;
-    else if (x > 0 && r_c - abs(y) < 0)
-      theta = M_PI - atan(x / (abs(y) - r_c));
-    else if (x < 0 && r_c - abs(y) > 0)
-      theta = 2 * M_PI - atan(x / (abs(y) - r_c));
-    else if (x < 0 && r_c == abs(y))
-      theta = 3 * M_PI / 2;
-    else if (x < 0 && r_c - abs(y) < 0)
-      theta = M_PI + atan(x / (abs(y) - r_c));
-    theta -= asin((CAR_LENGTH_SAFE + CAR_BASE) / 2 / r_c);
-
+    bounding_angle = bounding_angle > 0 ? bounding_angle : 0;
+    float r_c = 1 / curvature;
     // Distance from center of turning to p
-    float r_p = sqrt(pow(x, 2) + pow((r_c - abs(y)), 2));
+    float r_p = norm(x, r_c - y);
+
+    float theta = 0;
+    float alpha = asin(x / r_p);
+    if(x > 0) {
+      if ((r_c >= 0 && p.y() < r_c) || (r_c < 0 && p.y() >= r_c)) {
+        theta = alpha;
+      } else {
+        theta = M_PI - alpha;
+      }
+    } else {
+      if ((r_c < 0 && p.y() < r_c) || (r_c >= 0 && p.y() >= r_c)) {
+        theta = M_PI - alpha;
+      } else {
+        theta = 2 * M_PI + alpha;
+      }
+    }
+    r_c = abs(r_c);
+    theta -= asin((CAR_LENGTH_SAFE + CAR_BASE) / 2 / r_c) + kEpsilon;
 
     // Distance from center of turning to the car
     float r_inner_back = r_c - CAR_WIDTH_SAFE / 2;
-    float r_outer_front = 0.5 * sqrt(pow(2 * r_c + CAR_WIDTH_SAFE, 2) + pow(CAR_BASE + CAR_LENGTH_SAFE, 2));
+    float r_outer_front = 0.5 * norm(2 * r_c + CAR_WIDTH_SAFE, CAR_BASE + CAR_LENGTH_SAFE);
 
     if (theta > 0 && theta < bounding_angle) {
       if (r_p < r_inner_back)  // p is on the inside of the car's arc
@@ -279,28 +294,32 @@ namespace navigation
         return r_p - r_outer_front;
       // No points should lay between r_inner_back and r_outer_front since it's bounded by the free path length
     } 
-    // the car isn't in the path of the car at all
-    return HORIZON;
+    // p isn't in the path of the car at all
+    return -1.0;
   }
 
-  float Navigation::findMinClearance(float curvature, float free_path_length) {
+  float Navigation::getMinClearance(float curvature, float free_path_length) {
+    if(free_path_length < kEpsilon)
+      return 0.0;
+
     float min_clearance = HORIZON;
     for (Eigen::Vector2f v : point_cloud_) {
-      float clearance = calculateClearance(curvature, v, free_path_length);
+      float clearance = getClearance(curvature, v, free_path_length);
+      if (clearance < 0.0) continue;
       min_clearance = clearance < min_clearance ? clearance : min_clearance;
     }
     return min_clearance;
   }
 
-  float Navigation::scoreFunction(float curvature, struct PathOption &path) {
-    float w_clearance = 0.5;
-    float w_goal_dist = 2.0;
+  float Navigation::getScore(float curvature, struct PathOption &path) {
+    float w_clearance = 0.3;
+    float w_goal_dist = 1.5;
     
-    float free_path_length = findClosestObstacle(curvature);
-    float clearance = findMinClearance(curvature, free_path_length);
+    float free_path_length = getClosestObstacleDistance(curvature);
+    float clearance = getMinClearance(curvature, free_path_length);
 
     // float current_goal_dist = HORIZON;
-    // float travel_distance = (calculateLatencyVelocity() + calculateNextVelocity()) / 2 * INTERVAL;
+    // float travel_distance = (getLatencyVelocity() + getNextVelocity()) / 2 * INTERVAL;
     // float next_goal_dist;
     // if(curvature == 0) {
     //   next_goal_dist = current_goal_dist - travel_distance;
@@ -308,25 +327,25 @@ namespace navigation
     //   float angle = travel_distance * curvature;
     //   float x = sin(angle) / curvature;
     //   float y = (1 - cos(angle)) / curvature;
-    //   next_goal_dist = sqrt(pow(current_goal_dist - x, 2) + pow(y, 2));
+    //   next_goal_dist = norm(current_goal_dist - x, y);
     // }
     
     path.curvature = curvature;
     path.free_path_length = free_path_length;
     path.clearance = clearance;
-
+    
     //return free_path_length +  w_clearance * clearance + w_goal_dist * (HORIZON - next_goal_dist);
-    return free_path_length +  w_clearance * clearance + w_goal_dist * (MAX_CURVATURE - abs(curvature));
+    return free_path_length + w_clearance * clearance + w_goal_dist * (MAX_CURVATURE - abs(curvature));
   }
 
-  struct PathOption Navigation::pickBestPathOption() {
+  struct PathOption Navigation::getBestPathOption() {
     struct PathOption best_path = {0, 0, 0, Vector2f(0,0), Vector2f(0,0)};
     struct PathOption path = {0, 0, 0, Vector2f(0,0), Vector2f(0,0)};
 
     const float CURVATURE_STEP = 0.05;
     float best_score = -100000.0;
     for (float c = MIN_CURVATURE; c <= MAX_CURVATURE; c += CURVATURE_STEP) {
-      float score = scoreFunction(c, path);
+      float score = getScore(c, path);
       visualization::DrawPathOption(c, path.free_path_length, 0, local_viz_msg_);
       if (score > best_score) {
         best_path.curvature = path.curvature;
@@ -342,13 +361,14 @@ namespace navigation
 
   void Navigation::makeControlDecision()
   {
-    struct PathOption best_path = pickBestPathOption();
+    struct PathOption best_path = getBestPathOption();
     
-    float curr_velocity = calculateLatencyVelocity();
-    float remaining_dist = best_path.free_path_length - calculateLatencyDistance();
+    float curr_velocity = getLatencyVelocity();
+    float remaining_dist = best_path.free_path_length - getLatencyDistance();
     remaining_dist = remaining_dist > 0 ? remaining_dist : 0;
     float stopping_dist = -1 * pow(curr_velocity, 2) / (2 * DECELERATION);
     // printf("stopping_dist: %.2f, remaining_dist: %.2f, velocity: %.2f, free path len: %.2f, latency dist: %.2f\n", 
+<<<<<<< HEAD
     //     stopping_dist, remaining_dist, curr_velocity, best_path.free_path_length, calculateLatencyDistance());
     printf("stopping_dist: %.5f, remaining_dist: %.5f, Obstacle: %.3f, latency_dist: %.3f, \n drive_msg_.velocity: %.2f, velocity: %.2f, vnorm: %.2f\n", 
         stopping_dist, remaining_dist, best_path.free_path_length, calculateLatencyDistance(),
@@ -362,6 +382,18 @@ namespace navigation
       next_acceleration = DECELERATION; 
     }
     else if (remaining_dist <= REMAINING_DIST_BOUND) {
+=======
+    //     stopping_dist, remaining_dist, curr_velocity, best_path.free_path_length, getLatencyDistance());
+    // printf("stopping_dist: %.5f, remaining_dist: %.5f, Obstacle: %.3f, latency_dist: %.3f, \n drive_msg_.velocity: %.2f, velocity: %.2f, vnorm: %.2f\n", 
+    //     stopping_dist, remaining_dist, best_path.free_path_length, getLatencyDistance(),
+    //     drive_msg_.velocity, curr_velocity, norm(robot_vel_.x(), robot_vel_.y()));
+
+    // Decides whether to accelerate (4.0), decelerate (-4), or maintain velocity (0)
+    float next_acceleration;
+    if (stopping_dist >= remaining_dist)
+      next_acceleration = DECELERATION;
+    else if (remaining_dist <= 0.02)
+>>>>>>> master
       next_acceleration = DECELERATION;
       printf("case2\n");
     }
@@ -369,9 +401,16 @@ namespace navigation
       next_acceleration = ACCELERATION;
     else
       next_acceleration = 0;
+<<<<<<< HEAD
     printf("acceleration_: %.2f, next_acceleration: %.2f\n\n", acceleration_, next_acceleration);
+=======
+
+    // cout << " acceleration_ " << acceleration_
+    //      <<  ", next_acceleration " << next_acceleration << endl;
+>>>>>>> master
     drive_msg_.curvature = best_path.curvature;
-    drive_msg_.velocity = calculateNextVelocity();
+    drive_msg_.velocity = getNextVelocity(next_acceleration);
+    acceleration_ = next_acceleration;
   }
 
   void Navigation::Run()
@@ -389,10 +428,6 @@ namespace navigation
       return;
 
     makeControlDecision();
-    // cout << "drive_msg_.velocity " << drive_msg_.velocity 
-    //     << ", acceleration_ " << acceleration_
-    //     <<  ", timenow " << ros::Time::now() << endl;
-    // printf("\n");
 
     // Add timestamps to all messages.
     local_viz_msg_.header.stamp = ros::Time::now();
@@ -427,10 +462,17 @@ namespace navigation
                             local_viz_msg_);
 
     // draw point cloud
+<<<<<<< HEAD
     for (Eigen::Vector2f v : point_cloud_) {
       Eigen::Vector2f vprime(v.x(), v.y());
       visualization::DrawPoint(vprime, 0xff00d4, local_viz_msg_);
     }
+=======
+    // for (Eigen::Vector2f v : point_cloud_) {
+    //   Eigen::Vector2f vprime(v.x(), v.y());
+    //   visualization::DrawPoint(vprime, 0xff00d4, local_viz_msg_);
+    // }
+>>>>>>> master
   }
 
 } // namespace navigation

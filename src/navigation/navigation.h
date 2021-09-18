@@ -67,29 +67,29 @@ class Navigation {
 
  private:
   // Returns the car's velocity after the latency period
-  float calculateLatencyVelocity();
+  float getLatencyVelocity();
   // Returns the velocity the car shoud aim for by the next timestamp
-  float calculateNextVelocity();
+  float getNextVelocity(float acceleration);
   // Returns the distance the car travels during the latency
-  float calculateLatencyDistance();
+  float getLatencyDistance();
   // Returns the distance from the car to point p along a fixed arc
-  float calculateFreePathLength(const Eigen::Vector2f& p, float curvature);
+  float getFreePathLength(const Eigen::Vector2f& p, float curvature);
   // Returns the distance from the car to the closest obstacle along a fixed arc
-  float findClosestObstacle(float curvature);
+  float getClosestObstacleDistance(float curvature);
   // Returns the distance from point p to the car's sweeping volume
-  float calculateClearance(float curvature, const Eigen::Vector2f &p, float free_path_length);
+  float getClearance(float curvature, const Eigen::Vector2f &p, float free_path_length);
   // Returns the distance from the car's sweeping volume to the closest obstacle
-  float findMinClearance(float curvature, float free_path_length);
+  float getMinClearance(float curvature, float free_path_length);
   // Returns the score of a curvature while store the path option
-  float scoreFunction(float curvature, struct PathOption &path);
+  float getScore(float curvature, struct PathOption &path);
   // Returns the best path option
-  struct PathOption pickBestPathOption();
+  struct PathOption getBestPathOption();
   // Set next curvature and velocity
   void makeControlDecision();
   // Draws visualizations
   void drawVisualizations();
   // Returns the distance from the car to the goal
-  // float calculateGoalDist();
+  // float getGoalDist();
 
   // Whether odometry has been initialized.
   bool odom_initialized_;
@@ -123,17 +123,16 @@ class Navigation {
 
   // Current acceleration (acceleration used in previous control cycle to get current velocity)
   float acceleration_;
-  // Next acceleration (acceleration used in current control cycle to get the next velocity)
-  float next_acceleration;
 
   // Latency constants
-  const float LATENCY = 0.1;
-  const float MAX_VELOCITY = 1.0;
+  const float LATENCY = 0.5;  // simulator
+  // const float LATENCY = 0.15;  // TODO: use real car's latency
+  const float MAX_VELOCITY = 2.0;
   const float ACCELERATION = 4.0;
   const float DECELERATION = -4.0;
   
   // Car constant
-  const float SAFE_MARGIN = 0.05;
+  const float SAFE_MARGIN = 0.1;
   const float CAR_LENGTH = 0.4826;
   const float CAR_LENGTH_SAFE = CAR_LENGTH + SAFE_MARGIN * 2;
   const float CAR_BASE = 0.343;
@@ -145,7 +144,6 @@ class Navigation {
   float MAX_CURVATURE = 1.7;
 
   // LIDAR constants
-  const float LASER_X = 0.2;  // Laser frame's displacement from the base_line frame
   const float HORIZON = 10.0;  // The observation limit
 
   // The time interval between two control cycles
