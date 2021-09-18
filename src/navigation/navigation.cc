@@ -239,6 +239,10 @@ namespace navigation
   // }
 
   float Navigation::getClearance(float curvature, const Eigen::Vector2f &p, float free_path_length) {
+    // if there's no obstacle, the LIDAR returns its limit
+    if (norm(p.x(), p.y()) >= HORIZON - kEpsilon)
+      return HORIZON;
+
     float x = p.x();
     float y = p.y();
     
@@ -252,25 +256,28 @@ namespace navigation
     }
 
     float bounding_angle = abs(free_path_length * curvature) - kEpsilon;
+    bounding_angle = bounding_angle > 0 ? bounding_angle : 0;
     float r_c = 1 / curvature;
     // Distance from center of turning to p
     float r_p = norm(x, r_c - y);
-    r_c = abs(r_c);
 
     float theta = 0;
-    if (x > 0 && r_c - abs(y) > 0)
-      theta = atan(x / (r_c - abs(y)));
-    else if (x > 0 && r_c == abs(y))
-      theta = M_PI / 2;
-    else if (x > 0 && r_c - abs(y) < 0)
-      theta = M_PI - atan(x / (abs(y) - r_c));
-    else if (x < 0 && r_c - abs(y) > 0)
-      theta = 2 * M_PI - atan(x / (abs(y) - r_c));
-    else if (x < 0 && r_c == abs(y))
-      theta = 3 * M_PI / 2;
-    else if (x < 0 && r_c - abs(y) < 0)
-      theta = M_PI + atan(x / (abs(y) - r_c));
-    theta -= asin((CAR_LENGTH_SAFE + CAR_BASE) / 2 / r_c);
+    float alpha = asin(x / r_p);
+    if(x > 0) {
+      if ((r_c >= 0 && p.y() < r_c) || (r_c < 0 && p.y() >= r_c)) {
+        theta = alpha;
+      } else {
+        theta = M_PI - alpha;
+      }
+    } else {
+      if ((r_c < 0 && p.y() < r_c) || (r_c >= 0 && p.y() >= r_c)) {
+        theta = M_PI - alpha;
+      } else {
+        theta = 2 * M_PI + alpha;
+      }
+    }
+    r_c = abs(r_c);
+    theta -= asin((CAR_LENGTH_SAFE + CAR_BASE) / 2 / r_c) + kEpsilon;
 
     // Distance from center of turning to the car
     float r_inner_back = r_c - CAR_WIDTH_SAFE / 2;
@@ -283,22 +290,26 @@ namespace navigation
         return r_p - r_outer_front;
       // No points should lay between r_inner_back and r_outer_front since it's bounded by the free path length
     } 
-    // the car isn't in the path of the car at all
-    return HORIZON;
+    // p isn't in the path of the car at all
+    return -1.0;
   }
 
   float Navigation::getMinClearance(float curvature, float free_path_length) {
+    if(free_path_length < kEpsilon)
+      return 0.0;
+
     float min_clearance = HORIZON;
     for (Eigen::Vector2f v : point_cloud_) {
       float clearance = getClearance(curvature, v, free_path_length);
+      if (clearance < 0.0) continue;
       min_clearance = clearance < min_clearance ? clearance : min_clearance;
     }
     return min_clearance;
   }
 
   float Navigation::getScore(float curvature, struct PathOption &path) {
-    float w_clearance = 0.5;
-    float w_goal_dist = 2.0;
+    float w_clearance = 0.3;
+    float w_goal_dist = 1.5;
     
     float free_path_length = getClosestObstacleDistance(curvature);
     float clearance = getMinClearance(curvature, free_path_length);
@@ -318,9 +329,9 @@ namespace navigation
     path.curvature = curvature;
     path.free_path_length = free_path_length;
     path.clearance = clearance;
-
+    
     //return free_path_length +  w_clearance * clearance + w_goal_dist * (HORIZON - next_goal_dist);
-    return free_path_length +  w_clearance * clearance + w_goal_dist * (MAX_CURVATURE - abs(curvature));
+    return free_path_length + w_clearance * clearance + w_goal_dist * (MAX_CURVATURE - abs(curvature));
   }
 
   struct PathOption Navigation::getBestPathOption() {
