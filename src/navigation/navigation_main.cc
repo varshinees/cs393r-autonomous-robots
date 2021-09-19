@@ -86,7 +86,8 @@ void LaserCallback(const sensor_msgs::LaserScan& msg) {
   static vector<Vector2f> point_cloud_;
   point_cloud_.clear();
   // Convert the LaserScan to a point cloud
-  for (size_t i = 0; i < msg.ranges.size(); ++i) {
+  size_t step = 10;
+  for (size_t i = 0; i < msg.ranges.size(); i += step) {
     const float r = msg.ranges[i];
     const float a = msg.angle_min + i * msg.angle_increment;
     float x = r * cos(a) + kLaserLoc.x();
