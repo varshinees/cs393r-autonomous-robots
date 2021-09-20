@@ -369,9 +369,9 @@ namespace navigation
     float next_acceleration;
     if(remaining_dist < 0.02)
       next_acceleration = DECELERATION;
-    else if (accelerate_dist < remaining_dist && curr_velocity < MAX_VELOCITY)
+    else if (accelerate_dist < remaining_dist - kEpsilon && curr_velocity < MAX_VELOCITY)
       next_acceleration = ACCELERATION;
-    else if (const_dist < remaining_dist)
+    else if (const_dist < remaining_dist - kEpsilon)
       next_acceleration = 0;
     else
       next_acceleration = DECELERATION;
