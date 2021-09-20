@@ -1,0 +1,166 @@
+remaining_dist: 5.235986, free_path: 5.235986, latency_dist: 0.000000, accelerate_dist: 0.01, const_dist: 0.00
+vnorm: 0.00, drive_vel_: 0.00, curr_velocity: 0.000000, acceleration_: 0.00, next_acceleration: 4.00
+
+remaining_dist: 5.235986, free_path: 5.235986, latency_dist: 0.000000, accelerate_dist: 0.04, const_dist: 0.02
+vnorm: 0.20, drive_vel_: 0.20, curr_velocity: 0.200000, acceleration_: 4.00, next_acceleration: 4.00
+
+remaining_dist: 5.235986, free_path: 5.235986, latency_dist: 0.000000, accelerate_dist: 0.07, const_dist: 0.04
+vnorm: 0.40, drive_vel_: 0.40, curr_velocity: 0.400000, acceleration_: 4.00, next_acceleration: 4.00
+
+remaining_dist: 5.026546, free_path: 5.026546, latency_dist: 0.000000, accelerate_dist: 0.12, const_dist: 0.08
+vnorm: 0.60, drive_vel_: 0.60, curr_velocity: 0.600000, acceleration_: 4.00, next_acceleration: 4.00
+
+remaining_dist: 5.026546, free_path: 5.026546, latency_dist: 0.000000, accelerate_dist: 0.15, const_dist: 0.10
+vnorm: 0.73, drive_vel_: 0.80, curr_velocity: 0.725000, acceleration_: 4.00, next_acceleration: 4.00
+
+remaining_dist: 5.026546, free_path: 5.026546, latency_dist: 0.000000, accelerate_dist: 0.17, const_dist: 0.15
+vnorm: 0.93, drive_vel_: 0.93, curr_velocity: 0.925000, acceleration_: 4.00, next_acceleration: 4.00
+
+remaining_dist: 5.026546, free_path: 5.026546, latency_dist: 0.000000, accelerate_dist: 0.17, const_dist: 0.17
+vnorm: 1.00, drive_vel_: 1.00, curr_velocity: 1.000000, acceleration_: 4.00, next_acceleration: 0.00
+
+remaining_dist: 5.026546, free_path: 5.026546, latency_dist: 0.000000, accelerate_dist: 0.17, const_dist: 0.17
+vnorm: 1.00, drive_vel_: 1.00, curr_velocity: 1.000000, acceleration_: 0.00, next_acceleration: 0.00
+
+remaining_dist: 4.833218, free_path: 4.833218, latency_dist: 0.000000, accelerate_dist: 0.17, const_dist: 0.17
+vnorm: 1.00, drive_vel_: 1.00, curr_velocity: 1.000000, acceleration_: 0.00, next_acceleration: 0.00
+
+remaining_dist: 5.026546, free_path: 5.026546, latency_dist: 0.000000, accelerate_dist: 0.17, const_dist: 0.17
+vnorm: 1.00, drive_vel_: 1.00, curr_velocity: 1.000000, acceleration_: 0.00, next_acceleration: 0.00
+
+remaining_dist: 5.026546, free_path: 5.026546, latency_dist: 0.000000, accelerate_dist: 0.17, const_dist: 0.17
+vnorm: 1.00, drive_vel_: 1.00, curr_velocity: 1.000000, acceleration_: 0.00, next_acceleration: 0.00
+
+remaining_dist: 5.026546, free_path: 5.026546, latency_dist: 0.000000, accelerate_dist: 0.17, const_dist: 0.17
+vnorm: 1.00, drive_vel_: 1.00, curr_velocity: 1.000000, acceleration_: 0.00, next_acceleration: 0.00
+
+remaining_dist: 4.833218, free_path: 4.833218, latency_dist: 0.000000, accelerate_dist: 0.17, const_dist: 0.17
+vnorm: 1.00, drive_vel_: 1.00, curr_velocity: 1.000000, acceleration_: 0.00, next_acceleration: 0.00
+
+remaining_dist: 5.026546, free_path: 5.026546, latency_dist: 0.000000, accelerate_dist: 0.17, const_dist: 0.17
+vnorm: 1.00, drive_vel_: 1.00, curr_velocity: 1.000000, acceleration_: 0.00, next_acceleration: 0.00
+
+remaining_dist: 5.026546, free_path: 5.026546, latency_dist: 0.000000, accelerate_dist: 0.17, const_dist: 0.17
+vnorm: 1.00, drive_vel_: 1.00, curr_velocity: 1.000000, acceleration_: 0.00, next_acceleration: 0.00
+
+remaining_dist: 5.026546, free_path: 5.026546, latency_dist: 0.000000, accelerate_dist: 0.17, const_dist: 0.17
+vnorm: 1.00, drive_vel_: 1.00, curr_velocity: 1.000000, acceleration_: 0.00, next_acceleration: 0.00
+
+remaining_dist: 5.026546, free_path: 5.026546, latency_dist: 0.000000, accelerate_dist: 0.17, const_dist: 0.17
+vnorm: 1.00, drive_vel_: 1.00, curr_velocity: 1.000000, acceleration_: 0.00, next_acceleration: 0.00
+
+remaining_dist: 5.235986, free_path: 5.235986, latency_dist: 0.000000, accelerate_dist: 0.17, const_dist: 0.17
+vnorm: 1.00, drive_vel_: 1.00, curr_velocity: 1.000000, acceleration_: 0.00, next_acceleration: 0.00
+
+remaining_dist: 5.235986, free_path: 5.235986, latency_dist: 0.000000, accelerate_dist: 0.17, const_dist: 0.17
+vnorm: 1.00, drive_vel_: 1.00, curr_velocity: 1.000000, acceleration_: 0.00, next_acceleration: 0.00
+
+remaining_dist: 5.235986, free_path: 5.235986, latency_dist: 0.000000, accelerate_dist: 0.17, const_dist: 0.17
+vnorm: 1.00, drive_vel_: 1.00, curr_velocity: 1.000000, acceleration_: 0.00, next_acceleration: 0.00
+
+remaining_dist: 5.235986, free_path: 5.235986, latency_dist: 0.000000, accelerate_dist: 0.17, const_dist: 0.17
+vnorm: 1.00, drive_vel_: 1.00, curr_velocity: 1.000000, acceleration_: 0.00, next_acceleration: 0.00
+
+remaining_dist: 5.235986, free_path: 5.235986, latency_dist: 0.000000, accelerate_dist: 0.17, const_dist: 0.17
+vnorm: 1.00, drive_vel_: 1.00, curr_velocity: 1.000000, acceleration_: 0.00, next_acceleration: 0.00
+
+remaining_dist: 5.235986, free_path: 5.235986, latency_dist: 0.000000, accelerate_dist: 0.17, const_dist: 0.17
+vnorm: 1.00, drive_vel_: 1.00, curr_velocity: 1.000000, acceleration_: 0.00, next_acceleration: 0.00
+
+remaining_dist: 5.235986, free_path: 5.235986, latency_dist: 0.000000, accelerate_dist: 0.17, const_dist: 0.17
+vnorm: 1.00, drive_vel_: 1.00, curr_velocity: 1.000000, acceleration_: 0.00, next_acceleration: 0.00
+
+remaining_dist: 5.026546, free_path: 5.026546, latency_dist: 0.000000, accelerate_dist: 0.17, const_dist: 0.17
+vnorm: 1.00, drive_vel_: 1.00, curr_velocity: 1.000000, acceleration_: 0.00, next_acceleration: 0.00
+
+remaining_dist: 4.833218, free_path: 4.833218, latency_dist: 0.000000, accelerate_dist: 0.17, const_dist: 0.17
+vnorm: 1.00, drive_vel_: 1.00, curr_velocity: 1.000000, acceleration_: 0.00, next_acceleration: 0.00
+
+remaining_dist: 4.654210, free_path: 4.654210, latency_dist: 0.000000, accelerate_dist: 0.17, const_dist: 0.17
+vnorm: 1.00, drive_vel_: 1.00, curr_velocity: 1.000000, acceleration_: 0.00, next_acceleration: 0.00
+
+remaining_dist: 4.053668, free_path: 4.053668, latency_dist: 0.000000, accelerate_dist: 0.17, const_dist: 0.17
+vnorm: 1.00, drive_vel_: 1.00, curr_velocity: 1.000000, acceleration_: 0.00, next_acceleration: 0.00
+
+remaining_dist: 0.053159, free_path: 0.053159, latency_dist: 0.000000, accelerate_dist: 0.17, const_dist: 0.17
+vnorm: 1.00, drive_vel_: 1.00, curr_velocity: 1.000000, acceleration_: 0.00, next_acceleration: -4.00
+
+remaining_dist: 0.010490, free_path: 0.010490, latency_dist: 0.000000, accelerate_dist: 0.17, const_dist: 0.14
+vnorm: 0.88, drive_vel_: 0.80, curr_velocity: 0.875000, acceleration_: -4.00, next_acceleration: -4.00
+
+remaining_dist: 0.001249, free_path: 0.001249, latency_dist: 0.000000, accelerate_dist: 0.13, const_dist: 0.09
+vnorm: 0.68, drive_vel_: 0.68, curr_velocity: 0.675000, acceleration_: -4.00, next_acceleration: -4.00
+
+remaining_dist: 0.000348, free_path: 0.000348, latency_dist: 0.000000, accelerate_dist: 0.09, const_dist: 0.05
+vnorm: 0.48, drive_vel_: 0.48, curr_velocity: 0.475000, acceleration_: -4.00, next_acceleration: -4.00
+
+remaining_dist: 0.000396, free_path: 0.000396, latency_dist: 0.000000, accelerate_dist: 0.05, const_dist: 0.02
+vnorm: 0.28, drive_vel_: 0.28, curr_velocity: 0.275000, acceleration_: -4.00, next_acceleration: -4.00
+
+remaining_dist: 0.000351, free_path: 0.000351, latency_dist: 0.000000, accelerate_dist: 0.02, const_dist: 0.00
+vnorm: 0.08, drive_vel_: 0.08, curr_velocity: 0.075000, acceleration_: -4.00, next_acceleration: -4.00
+
+remaining_dist: 0.000459, free_path: 0.000459, latency_dist: 0.000000, accelerate_dist: 0.01, const_dist: 0.00
+vnorm: 0.00, drive_vel_: 0.00, curr_velocity: 0.000000, acceleration_: -4.00, next_acceleration: -4.00
+
+remaining_dist: 0.000014, free_path: 0.000014, latency_dist: 0.000000, accelerate_dist: 0.01, const_dist: 0.00
+vnorm: 0.00, drive_vel_: 0.00, curr_velocity: 0.000000, acceleration_: -4.00, next_acceleration: -4.00
+
+remaining_dist: 0.000115, free_path: 0.000115, latency_dist: 0.000000, accelerate_dist: 0.01, const_dist: 0.00
+vnorm: 0.00, drive_vel_: 0.00, curr_velocity: 0.000000, acceleration_: -4.00, next_acceleration: -4.00
+
+remaining_dist: 0.000441, free_path: 0.000441, latency_dist: 0.000000, accelerate_dist: 0.01, const_dist: 0.00
+vnorm: 0.00, drive_vel_: 0.00, curr_velocity: 0.000000, acceleration_: -4.00, next_acceleration: -4.00
+
+remaining_dist: 0.000033, free_path: 0.000033, latency_dist: 0.000000, accelerate_dist: 0.01, const_dist: 0.00
+vnorm: 0.00, drive_vel_: 0.00, curr_velocity: 0.000000, acceleration_: -4.00, next_acceleration: -4.00
+
+remaining_dist: 0.000077, free_path: 0.000077, latency_dist: 0.000000, accelerate_dist: 0.01, const_dist: 0.00
+vnorm: 0.00, drive_vel_: 0.00, curr_velocity: 0.000000, acceleration_: -4.00, next_acceleration: -4.00
+
+remaining_dist: 0.000233, free_path: 0.000233, latency_dist: 0.000000, accelerate_dist: 0.01, const_dist: 0.00
+vnorm: 0.00, drive_vel_: 0.00, curr_velocity: 0.000000, acceleration_: -4.00, next_acceleration: -4.00
+
+remaining_dist: 0.001399, free_path: 0.001399, latency_dist: 0.000000, accelerate_dist: 0.01, const_dist: 0.00
+vnorm: 0.00, drive_vel_: 0.00, curr_velocity: 0.000000, acceleration_: -4.00, next_acceleration: -4.00
+
+remaining_dist: 0.000031, free_path: 0.000031, latency_dist: 0.000000, accelerate_dist: 0.01, const_dist: 0.00
+vnorm: 0.00, drive_vel_: 0.00, curr_velocity: 0.000000, acceleration_: -4.00, next_acceleration: -4.00
+
+remaining_dist: 0.000715, free_path: 0.000715, latency_dist: 0.000000, accelerate_dist: 0.01, const_dist: 0.00
+vnorm: 0.00, drive_vel_: 0.00, curr_velocity: 0.000000, acceleration_: -4.00, next_acceleration: -4.00
+
+remaining_dist: 0.002663, free_path: 0.002663, latency_dist: 0.000000, accelerate_dist: 0.01, const_dist: 0.00
+vnorm: 0.00, drive_vel_: 0.00, curr_velocity: 0.000000, acceleration_: -4.00, next_acceleration: -4.00
+
+remaining_dist: 0.000321, free_path: 0.000321, latency_dist: 0.000000, accelerate_dist: 0.01, const_dist: 0.00
+vnorm: 0.00, drive_vel_: 0.00, curr_velocity: 0.000000, acceleration_: -4.00, next_acceleration: -4.00
+
+remaining_dist: 0.000040, free_path: 0.000040, latency_dist: 0.000000, accelerate_dist: 0.01, const_dist: 0.00
+vnorm: 0.00, drive_vel_: 0.00, curr_velocity: 0.000000, acceleration_: -4.00, next_acceleration: -4.00
+
+remaining_dist: 0.001427, free_path: 0.001427, latency_dist: 0.000000, accelerate_dist: 0.01, const_dist: 0.00
+vnorm: 0.00, drive_vel_: 0.00, curr_velocity: 0.000000, acceleration_: -4.00, next_acceleration: -4.00
+
+remaining_dist: 0.001910, free_path: 0.001910, latency_dist: 0.000000, accelerate_dist: 0.01, const_dist: 0.00
+vnorm: 0.00, drive_vel_: 0.00, curr_velocity: 0.000000, acceleration_: -4.00, next_acceleration: -4.00
+
+remaining_dist: 0.000249, free_path: 0.000249, latency_dist: 0.000000, accelerate_dist: 0.01, const_dist: 0.00
+vnorm: 0.00, drive_vel_: 0.00, curr_velocity: 0.000000, acceleration_: -4.00, next_acceleration: -4.00
+
+remaining_dist: 0.001627, free_path: 0.001627, latency_dist: 0.000000, accelerate_dist: 0.01, const_dist: 0.00
+vnorm: 0.00, drive_vel_: 0.00, curr_velocity: 0.000000, acceleration_: -4.00, next_acceleration: -4.00
+
+remaining_dist: 0.000182, free_path: 0.000182, latency_dist: 0.000000, accelerate_dist: 0.01, const_dist: 0.00
+vnorm: 0.00, drive_vel_: 0.00, curr_velocity: 0.000000, acceleration_: -4.00, next_acceleration: -4.00
+
+remaining_dist: 0.000121, free_path: 0.000121, latency_dist: 0.000000, accelerate_dist: 0.01, const_dist: 0.00
+vnorm: 0.00, drive_vel_: 0.00, curr_velocity: 0.000000, acceleration_: -4.00, next_acceleration: -4.00
+
+remaining_dist: 0.000506, free_path: 0.000506, latency_dist: 0.000000, accelerate_dist: 0.01, const_dist: 0.00
+vnorm: 0.00, drive_vel_: 0.00, curr_velocity: 0.000000, acceleration_: -4.00, next_acceleration: -4.00
+
+remaining_dist: 0.001406, free_path: 0.001406, latency_dist: 0.000000, accelerate_dist: 0.01, const_dist: 0.00
+vnorm: 0.00, drive_vel_: 0.00, curr_velocity: 0.000000, acceleration_: -4.00, next_acceleration: -4.00
+
+Exiting.

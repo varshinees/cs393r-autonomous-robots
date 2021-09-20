@@ -367,14 +367,20 @@ namespace navigation
    
     // Decides whether to accelerate (4.0), decelerate (-4), or maintain velocity (0)
     float next_acceleration;
-    if(remaining_dist < 0.02)
-      next_acceleration = DECELERATION;
-    else if (accelerate_dist < remaining_dist - kEpsilon && curr_velocity < MAX_VELOCITY)
+    // if(remaining_dist < 0.02)
+    //   next_acceleration = DECELERATION;
+    // else 
+    if (accelerate_dist < remaining_dist - kEpsilon && curr_velocity < MAX_VELOCITY)
       next_acceleration = ACCELERATION;
     else if (const_dist < remaining_dist - kEpsilon)
       next_acceleration = 0;
     else
       next_acceleration = DECELERATION;
+    
+    // printf("remaining_dist: %f, free_path: %f, latency_dist: %f, accelerate_dist: %.2f, const_dist: %.2f\n", 
+    //   remaining_dist, best_path.free_path_length, getLatencyDistance(), accelerate_dist, const_dist);
+    // printf("vnorm: %.2f, drive_vel_: %.2f, curr_velocity: %f, acceleration_: %.2f, next_acceleration: %.2f\n\n", 
+    //   norm(robot_vel_.x(), robot_vel_.y()), drive_msg_.velocity, curr_velocity, acceleration_, next_acceleration);
 
     drive_msg_.curvature = best_path.curvature;
     drive_msg_.velocity = getNextVelocity(next_acceleration);
@@ -428,6 +434,12 @@ namespace navigation
                             Eigen::Vector2f((CAR_BASE + CAR_LENGTH_SAFE)/2, -CAR_WIDTH_SAFE/2),
                             0x000000,
                             local_viz_msg_);
+
+    // draw point cloud
+    // for (Eigen::Vector2f v : point_cloud_) {
+    //   Eigen::Vector2f vprime(v.x(), v.y());
+    //   visualization::DrawPoint(vprime, 0xff00d4, local_viz_msg_);
+    // }
   }
 
 } // namespace navigation
