@@ -204,10 +204,6 @@ namespace navigation
     }
     theta = theta > 0 ? theta : 0;
 
-    // if (hit_front || hit_side) {
-    //   Eigen::Vector2f vprime(x, y);
-    //   visualization::DrawPoint(vprime, 0x43eb34, local_viz_msg_);
-    // }
     return theta * r_c > HORIZON ? HORIZON : theta * r_c;
   }
 
@@ -362,26 +358,24 @@ namespace navigation
     float curr_velocity = getLatencyVelocity();
     float remaining_dist = best_path.free_path_length - getLatencyDistance();
     remaining_dist = remaining_dist > 0 ? remaining_dist : 0;
-    float stopping_dist = -1 * pow(curr_velocity, 2) / (2 * DECELERATION);
-    // printf("stopping_dist: %.2f, remaining_dist: %.2f, velocity: %.2f, free path len: %.2f, latency dist: %.2f\n", 
-    //     stopping_dist, remaining_dist, curr_velocity, best_path.free_path_length, getLatencyDistance());
-    // printf("stopping_dist: %.5f, remaining_dist: %.5f, Obstacle: %.3f, latency_dist: %.3f, \n drive_msg_.velocity: %.2f, velocity: %.2f, vnorm: %.2f\n", 
-    //     stopping_dist, remaining_dist, best_path.free_path_length, getLatencyDistance(),
-    //     drive_msg_.velocity, curr_velocity, norm(robot_vel_.x(), robot_vel_.y()));
+    float decelerate_dist = -1 * pow(curr_velocity, 2) / (2 * DECELERATION);
 
+    float accelerate_final_v = getNextVelocity(ACCELERATION);
+    float accelerate_dist = 0.5 * (curr_velocity + accelerate_final_v) * INTERVAL - 1 * pow(accelerate_final_v, 2) / (2 * DECELERATION);
+    
+    float const_dist = decelerate_dist + curr_velocity * INTERVAL;
+   
     // Decides whether to accelerate (4.0), decelerate (-4), or maintain velocity (0)
     float next_acceleration;
-    if (stopping_dist >= remaining_dist)
+    if(remaining_dist < 0.02)
       next_acceleration = DECELERATION;
-    else if (remaining_dist <= 0.02)
-      next_acceleration = DECELERATION;
-    else if (abs(stopping_dist - remaining_dist) > kEpsilon && curr_velocity < MAX_VELOCITY)
+    else if (accelerate_dist < remaining_dist && curr_velocity < MAX_VELOCITY)
       next_acceleration = ACCELERATION;
-    else
+    else if (const_dist < remaining_dist)
       next_acceleration = 0;
+    else
+      next_acceleration = DECELERATION;
 
-    // cout << " acceleration_ " << acceleration_
-    //      <<  ", next_acceleration " << next_acceleration << endl;
     drive_msg_.curvature = best_path.curvature;
     drive_msg_.velocity = getNextVelocity(next_acceleration);
     acceleration_ = next_acceleration;
@@ -434,18 +428,7 @@ namespace navigation
                             Eigen::Vector2f((CAR_BASE + CAR_LENGTH_SAFE)/2, -CAR_WIDTH_SAFE/2),
                             0x000000,
                             local_viz_msg_);
-
-    // draw point cloud
-    // for (Eigen::Vector2f v : point_cloud_) {
-    //   Eigen::Vector2f vprime(v.x(), v.y());
-    //   visualization::DrawPoint(vprime, 0xff00d4, local_viz_msg_);
-    // }
   }
 
 } // namespace navigation
 
-/**
-1. How to convert the LaserScan into the point cloud
-2. How precisely do we have to hit the navigation target?
-3. How to handle scoring function with values of different magnitudes? Normalization?
-**/
