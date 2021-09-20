@@ -148,6 +148,10 @@ class Navigation {
 
   // The time interval between two control cycles
   const float INTERVAL = 0.05;
+
+  // measure latency
+  Eigen::Vector2f prev_v_;
+  float dist_traveled;
 };
 
 }  // namespace navigation

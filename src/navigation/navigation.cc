@@ -70,7 +70,8 @@ namespace navigation
                                                                        robot_omega_(0),
                                                                        nav_complete_(true),
                                                                        nav_goal_loc_(5, 0), // TODO: change to command line argument
-                                                                       nav_goal_angle_(0)
+                                                                       nav_goal_angle_(0),
+                                                                       prev_v_(0, 0)
   {
     drive_pub_ = n->advertise<AckermannCurvatureDriveMsg>(
         "ackermann_curvature_drive", 1);
@@ -81,6 +82,7 @@ namespace navigation
         "map", "navigation_global");
     InitRosHeader("base_link", &drive_msg_.header);
     acceleration_ = 0.0;
+    dist_traveled = 0.0;
   }
 
   void Navigation::SetNavGoal(const Vector2f &loc, float angle)
@@ -353,10 +355,14 @@ namespace navigation
 
   void Navigation::makeControlDecision()
   {
-    struct PathOption best_path = getBestPathOption();
+    // struct PathOption best_path = getBestPathOption();
+    const float dist = 2.0;
+    float v = (norm(robot_vel_.x(), robot_vel_.y()) + norm(prev_v_.x(), prev_v_.y())) / 2;
+    dist_traveled += v * INTERVAL;
     
     float curr_velocity = getLatencyVelocity();
-    float remaining_dist = best_path.free_path_length - getLatencyDistance();
+    // float remaining_dist = best_path.free_path_length - getLatencyDistance();
+    float remaining_dist = dist - dist_traveled - getLatencyDistance();
     remaining_dist = remaining_dist > 0 ? remaining_dist : 0;
     float decelerate_dist = -1 * pow(curr_velocity, 2) / (2 * DECELERATION);
 
@@ -376,7 +382,7 @@ namespace navigation
     else
       next_acceleration = DECELERATION;
 
-    drive_msg_.curvature = best_path.curvature;
+    drive_msg_.curvature = 0;
     drive_msg_.velocity = getNextVelocity(next_acceleration);
     acceleration_ = next_acceleration;
   }
