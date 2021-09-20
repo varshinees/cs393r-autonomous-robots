@@ -127,6 +127,7 @@ namespace navigation
   float Navigation::getLatencyVelocity()
   {
     float initial_v = norm(robot_vel_.x(), robot_vel_.y());
+    // float initial_v = drive_msg_.velocity;
     float final_v = initial_v + acceleration_ * LATENCY;
     return final_v < MAX_VELOCITY ? (final_v > 0 ? final_v : 0) : MAX_VELOCITY;
   }
@@ -142,6 +143,7 @@ namespace navigation
   {
     // Assume the car is constantly accelerating
     float initial_v = norm(robot_vel_.x(), robot_vel_.y());
+    // float initial_v = drive_msg_.velocity;
     float final_v = getLatencyVelocity();
     return 0.5 * (initial_v + final_v) * LATENCY;
   }
@@ -367,10 +369,9 @@ namespace navigation
    
     // Decides whether to accelerate (4.0), decelerate (-4), or maintain velocity (0)
     float next_acceleration;
-    // if(remaining_dist < 0.02)
-    //   next_acceleration = DECELERATION;
-    // else 
-    if (accelerate_dist < remaining_dist - kEpsilon && curr_velocity < MAX_VELOCITY)
+    if(remaining_dist < 0.02)
+      next_acceleration = DECELERATION;
+    else if (accelerate_dist < remaining_dist - kEpsilon && curr_velocity < MAX_VELOCITY)
       next_acceleration = ACCELERATION;
     else if (const_dist < remaining_dist - kEpsilon)
       next_acceleration = 0;
