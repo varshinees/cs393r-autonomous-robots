@@ -401,6 +401,8 @@ namespace navigation
     if (!odom_initialized_)
       return;
 
+    cout << "x " << robot_loc_.x() << ", y " << robot_loc_.y() << endl;
+
     makeControlDecision();
 
     // Add timestamps to all messages.
