@@ -355,14 +355,14 @@ namespace navigation
 
   void Navigation::makeControlDecision()
   {
-    cout << "x " << robot_loc_.x() << ", y " << robot_loc_.y();
+    //cout << "x " << robot_loc_.x() << ", y " << robot_loc_.y();
 
     // struct PathOption best_path = getBestPathOption();
     const float dist = 2.0;
     float v = (norm(robot_vel_.x(), robot_vel_.y()) + norm(prev_v_.x(), prev_v_.y())) / 2;
     dist_traveled += v * INTERVAL;
     
-    cout << " dist_traveled " << dist_traveled << endl;
+    //cout << " dist_traveled " << dist_traveled << endl;
     float curr_velocity = getLatencyVelocity();
     // float remaining_dist = best_path.free_path_length - getLatencyDistance();
     float remaining_dist = dist - dist_traveled - getLatencyDistance();
@@ -378,9 +378,9 @@ namespace navigation
     float next_acceleration;
     if(remaining_dist < 0.02)
       next_acceleration = DECELERATION;
-    else if (accelerate_dist < remaining_dist && curr_velocity < MAX_VELOCITY)
+    else if (accelerate_dist < remaining_dist - kEpsilon && curr_velocity < MAX_VELOCITY)
       next_acceleration = ACCELERATION;
-    else if (const_dist < remaining_dist)
+    else if (const_dist < remaining_dist - kEpsilon)
       next_acceleration = 0;
     else
       next_acceleration = DECELERATION;

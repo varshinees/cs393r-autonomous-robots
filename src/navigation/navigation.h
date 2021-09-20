@@ -125,14 +125,14 @@ class Navigation {
   float acceleration_;
 
   // Latency constants
-  const float LATENCY = 0.0;  // simulator
-  // const float LATENCY = 0.15;  // TODO: use real car's latency
+  // const float LATENCY = 0.0;  // simulator
+  const float LATENCY = 0.1;  // TODO: use real car's latency
   const float MAX_VELOCITY = 1.0;
   const float ACCELERATION = 4.0;
   const float DECELERATION = -4.0;
   
   // Car constant
-  const float SAFE_MARGIN = 0.1;
+  const float SAFE_MARGIN = 0.15;
   const float CAR_LENGTH = 0.4826;
   const float CAR_LENGTH_SAFE = CAR_LENGTH + SAFE_MARGIN * 2;
   const float CAR_BASE = 0.343;
