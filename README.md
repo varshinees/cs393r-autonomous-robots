@@ -1,7 +1,7 @@
-# cs393r_starter
+# cs393r_assignment_1
 
 ## Using this Repo
-You will be using a duplicate of this repo for all development in the class. This repo provides starter code for the ROS subscriptions, publishers and control loops you will be using.
+See write_up.pdf for write up of our code.
 
 ### Prerequisites
 
