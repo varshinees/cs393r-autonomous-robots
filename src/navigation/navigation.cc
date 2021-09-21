@@ -126,7 +126,7 @@ namespace navigation
 
   float Navigation::getLatencyVelocity()
   {
-    float initial_v = norm(robot_vel_.x(), robot_vel_.y());
+    float initial_v = drive_msg_.velocity;
     float final_v = initial_v + acceleration_ * LATENCY;
     return final_v < MAX_VELOCITY ? (final_v > 0 ? final_v : 0) : MAX_VELOCITY;
   }
@@ -141,7 +141,7 @@ namespace navigation
   float Navigation::getLatencyDistance()
   {
     // Assume the car is constantly accelerating
-    float initial_v = norm(robot_vel_.x(), robot_vel_.y());
+    float initial_v = drive_msg_.velocity;
     float final_v = getLatencyVelocity();
     return 0.5 * (initial_v + final_v) * LATENCY;
   }
@@ -159,7 +159,7 @@ namespace navigation
     // The car is going straight
     if (abs(curvature) <= kEpsilon) {
       // check if the goal is in front of the car
-      if (y <= CAR_WIDTH_SAFE && y >= -CAR_WIDTH_SAFE && x >= (CAR_LENGTH_SAFE + CAR_BASE) / 2) {
+      if (y <= CAR_WIDTH_SAFE && y >= -CAR_WIDTH_SAFE && x > 0) {
         float free_path_length = x - (CAR_LENGTH_SAFE + CAR_BASE) / 2;
         return free_path_length > 0 ? free_path_length : 0;
       } else {
@@ -204,10 +204,6 @@ namespace navigation
     }
     theta = theta > 0 ? theta : 0;
 
-    // if (hit_front || hit_side) {
-    //   Eigen::Vector2f vprime(x, y);
-    //   visualization::DrawPoint(vprime, 0x43eb34, local_viz_msg_);
-    // }
     return theta * r_c > HORIZON ? HORIZON : theta * r_c;
   }
 
@@ -309,7 +305,7 @@ namespace navigation
 
   float Navigation::getScore(float curvature, struct PathOption &path) {
     float w_clearance = 0.3;
-    float w_goal_dist = 1.5;
+    float w_goal_dist = 0.9;
     
     float free_path_length = getClosestObstacleDistance(curvature);
     float clearance = getMinClearance(curvature, free_path_length);
@@ -362,26 +358,29 @@ namespace navigation
     float curr_velocity = getLatencyVelocity();
     float remaining_dist = best_path.free_path_length - getLatencyDistance();
     remaining_dist = remaining_dist > 0 ? remaining_dist : 0;
-    float stopping_dist = -1 * pow(curr_velocity, 2) / (2 * DECELERATION);
-    // printf("stopping_dist: %.2f, remaining_dist: %.2f, velocity: %.2f, free path len: %.2f, latency dist: %.2f\n", 
-    //     stopping_dist, remaining_dist, curr_velocity, best_path.free_path_length, getLatencyDistance());
-    // printf("stopping_dist: %.5f, remaining_dist: %.5f, Obstacle: %.3f, latency_dist: %.3f, \n drive_msg_.velocity: %.2f, velocity: %.2f, vnorm: %.2f\n", 
-    //     stopping_dist, remaining_dist, best_path.free_path_length, getLatencyDistance(),
-    //     drive_msg_.velocity, curr_velocity, norm(robot_vel_.x(), robot_vel_.y()));
+    float decelerate_dist = -1 * pow(curr_velocity, 2) / (2 * DECELERATION);
 
+    float accelerate_final_v = getNextVelocity(ACCELERATION);
+    float accelerate_dist = 0.5 * (curr_velocity + accelerate_final_v) * INTERVAL - 1 * pow(accelerate_final_v, 2) / (2 * DECELERATION);
+    
+    float const_dist = decelerate_dist + curr_velocity * INTERVAL;
+   
     // Decides whether to accelerate (4.0), decelerate (-4), or maintain velocity (0)
     float next_acceleration;
-    if (stopping_dist >= remaining_dist)
+    if(remaining_dist < 0.02)
       next_acceleration = DECELERATION;
-    else if (remaining_dist <= 0.02)
-      next_acceleration = DECELERATION;
-    else if (abs(stopping_dist - remaining_dist) > kEpsilon && curr_velocity < MAX_VELOCITY)
+    else if (accelerate_dist < remaining_dist - kEpsilon && curr_velocity < MAX_VELOCITY)
       next_acceleration = ACCELERATION;
-    else
+    else if (const_dist < remaining_dist - kEpsilon)
       next_acceleration = 0;
+    else
+      next_acceleration = DECELERATION;
+    
+    // printf("remaining_dist: %f, free_path: %f, latency_dist: %f, accelerate_dist: %.2f, const_dist: %.2f\n", 
+    //   remaining_dist, best_path.free_path_length, getLatencyDistance(), accelerate_dist, const_dist);
+    // printf("vnorm: %.2f, drive_vel_: %.2f, curr_velocity: %f, acceleration_: %.2f, next_acceleration: %.2f\n\n", 
+    //   norm(robot_vel_.x(), robot_vel_.y()), drive_msg_.velocity, curr_velocity, acceleration_, next_acceleration);
 
-    // cout << " acceleration_ " << acceleration_
-    //      <<  ", next_acceleration " << next_acceleration << endl;
     drive_msg_.curvature = best_path.curvature;
     drive_msg_.velocity = getNextVelocity(next_acceleration);
     acceleration_ = next_acceleration;
@@ -444,8 +443,3 @@ namespace navigation
 
 } // namespace navigation
 
-/**
-1. How to convert the LaserScan into the point cloud
-2. How precisely do we have to hit the navigation target?
-3. How to handle scoring function with values of different magnitudes? Normalization?
-**/
