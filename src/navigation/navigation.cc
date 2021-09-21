@@ -126,7 +126,6 @@ namespace navigation
 
   float Navigation::getLatencyVelocity()
   {
-    // float initial_v = norm(robot_vel_.x(), robot_vel_.y());
     float initial_v = drive_msg_.velocity;
     float final_v = initial_v + acceleration_ * LATENCY;
     return final_v < MAX_VELOCITY ? (final_v > 0 ? final_v : 0) : MAX_VELOCITY;
@@ -142,7 +141,6 @@ namespace navigation
   float Navigation::getLatencyDistance()
   {
     // Assume the car is constantly accelerating
-    // float initial_v = norm(robot_vel_.x(), robot_vel_.y());
     float initial_v = drive_msg_.velocity;
     float final_v = getLatencyVelocity();
     return 0.5 * (initial_v + final_v) * LATENCY;
@@ -307,7 +305,7 @@ namespace navigation
 
   float Navigation::getScore(float curvature, struct PathOption &path) {
     float w_clearance = 0.3;
-    float w_goal_dist = 1.0;
+    float w_goal_dist = 0.9;
     
     float free_path_length = getClosestObstacleDistance(curvature);
     float clearance = getMinClearance(curvature, free_path_length);
@@ -437,10 +435,10 @@ namespace navigation
                             local_viz_msg_);
 
     // draw point cloud
-    for (Eigen::Vector2f v : point_cloud_) {
-      Eigen::Vector2f vprime(v.x(), v.y());
-      visualization::DrawPoint(vprime, 0xff00d4, local_viz_msg_);
-    }
+    // for (Eigen::Vector2f v : point_cloud_) {
+    //   Eigen::Vector2f vprime(v.x(), v.y());
+    //   visualization::DrawPoint(vprime, 0xff00d4, local_viz_msg_);
+    // }
   }
 
 } // namespace navigation

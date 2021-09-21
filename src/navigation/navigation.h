@@ -126,7 +126,7 @@ class Navigation {
 
   // Latency constants
   // const float LATENCY = 0.0;  // simulator
-  const float LATENCY = 0.1;  // TODO: use real car's latency
+  const float LATENCY = 0.1;  // real car
   const float MAX_VELOCITY = 1.0;
   const float ACCELERATION = 4.0;
   const float DECELERATION = -4.0;
