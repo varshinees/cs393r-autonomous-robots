@@ -126,8 +126,8 @@ namespace navigation
 
   float Navigation::getLatencyVelocity()
   {
-    float initial_v = norm(robot_vel_.x(), robot_vel_.y());
-    // float initial_v = drive_msg_.velocity;
+    // float initial_v = norm(robot_vel_.x(), robot_vel_.y());
+    float initial_v = drive_msg_.velocity;
     float final_v = initial_v + acceleration_ * LATENCY;
     return final_v < MAX_VELOCITY ? (final_v > 0 ? final_v : 0) : MAX_VELOCITY;
   }
@@ -142,8 +142,8 @@ namespace navigation
   float Navigation::getLatencyDistance()
   {
     // Assume the car is constantly accelerating
-    float initial_v = norm(robot_vel_.x(), robot_vel_.y());
-    // float initial_v = drive_msg_.velocity;
+    // float initial_v = norm(robot_vel_.x(), robot_vel_.y());
+    float initial_v = drive_msg_.velocity;
     float final_v = getLatencyVelocity();
     return 0.5 * (initial_v + final_v) * LATENCY;
   }
@@ -161,7 +161,7 @@ namespace navigation
     // The car is going straight
     if (abs(curvature) <= kEpsilon) {
       // check if the goal is in front of the car
-      if (y <= CAR_WIDTH_SAFE && y >= -CAR_WIDTH_SAFE && x >= (CAR_LENGTH_SAFE + CAR_BASE) / 2) {
+      if (y <= CAR_WIDTH_SAFE && y >= -CAR_WIDTH_SAFE && x > 0) {
         float free_path_length = x - (CAR_LENGTH_SAFE + CAR_BASE) / 2;
         return free_path_length > 0 ? free_path_length : 0;
       } else {
@@ -307,7 +307,7 @@ namespace navigation
 
   float Navigation::getScore(float curvature, struct PathOption &path) {
     float w_clearance = 0.3;
-    float w_goal_dist = 1.5;
+    float w_goal_dist = 1.0;
     
     float free_path_length = getClosestObstacleDistance(curvature);
     float clearance = getMinClearance(curvature, free_path_length);
@@ -437,10 +437,10 @@ namespace navigation
                             local_viz_msg_);
 
     // draw point cloud
-    // for (Eigen::Vector2f v : point_cloud_) {
-    //   Eigen::Vector2f vprime(v.x(), v.y());
-    //   visualization::DrawPoint(vprime, 0xff00d4, local_viz_msg_);
-    // }
+    for (Eigen::Vector2f v : point_cloud_) {
+      Eigen::Vector2f vprime(v.x(), v.y());
+      visualization::DrawPoint(vprime, 0xff00d4, local_viz_msg_);
+    }
   }
 
 } // namespace navigation
