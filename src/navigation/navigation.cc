@@ -70,8 +70,8 @@ namespace navigation
                                                                        robot_omega_(0),
                                                                        nav_complete_(true),
                                                                        nav_goal_loc_(5, 0), // TODO: change to command line argument
-                                                                       nav_goal_angle_(0),
-                                                                       prev_v_(0, 0)
+                                                                       nav_goal_angle_(0)
+                                                                      //  prev_v_(0, 0)
   {
     drive_pub_ = n->advertise<AckermannCurvatureDriveMsg>(
         "ackermann_curvature_drive", 1);
@@ -83,6 +83,7 @@ namespace navigation
     InitRosHeader("base_link", &drive_msg_.header);
     acceleration_ = 0.0;
     dist_traveled = 0.0;
+    prev_v_norm = 0.0;
   }
 
   void Navigation::SetNavGoal(const Vector2f &loc, float angle)
@@ -359,10 +360,12 @@ namespace navigation
 
     // struct PathOption best_path = getBestPathOption();
     const float dist = 2.0;
-    float v = (norm(robot_vel_.x(), robot_vel_.y()) + norm(prev_v_.x(), prev_v_.y())) / 2;
+    // float v = (norm(robot_vel_.x(), robot_vel_.y()) + norm(prev_v_.x(), prev_v_.y())) / 2;
+    float v = 0.5 * (drive_msg_.velocity + prev_v_norm);
     dist_traveled += v * INTERVAL;
-    
-    //cout << " dist_traveled " << dist_traveled << endl;
+
+    // cout << "v " << norm(robot_vel_.x(), robot_vel_.y());
+    cout << " dist_traveled " << dist_traveled << endl;
     float curr_velocity = getLatencyVelocity();
     // float remaining_dist = best_path.free_path_length - getLatencyDistance();
     float remaining_dist = dist - dist_traveled - getLatencyDistance();
@@ -385,8 +388,12 @@ namespace navigation
     else
       next_acceleration = DECELERATION;
 
-    prev_v_.x() = robot_vel_.x();
-    prev_v_.y() = robot_vel_.y();
+    cout << "acceleration_ " << acceleration_ << ", next_acceleration " << next_acceleration << endl;
+    cout << endl;
+
+    // prev_v_.x() = robot_vel_.x();
+    // prev_v_.y() = robot_vel_.y();
+    prev_v_norm = drive_msg_.velocity;
 
     drive_msg_.curvature = 0;
     drive_msg_.velocity = getNextVelocity(next_acceleration);

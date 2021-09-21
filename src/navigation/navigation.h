@@ -150,7 +150,8 @@ class Navigation {
   const float INTERVAL = 0.05;
 
   // measure latency
-  Eigen::Vector2f prev_v_;
+  // Eigen::Vector2f prev_v_;
+  float prev_v_norm;
   float dist_traveled;
 };
 
